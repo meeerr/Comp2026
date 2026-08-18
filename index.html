@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COMPILATION</title>
+<style>
+  :root {
+    --bg-color: #05010a;
+    --theme-color: #00ffff;
+    --cyan: #00e5ff;         
+    --lime: #39ff14;         
+    --gold: #ffd700;         
+    --orange: #ff6600;       
+    --hot-pink: #ff00aa;     
+    --electric-blue: #007fff; 
+    --magenta: #ff00ff;      
+    --bright-green: #32cd32; 
+    --neon-red: #ff073a;     
+    --forest-green: #228b22; 
+    --purple-haze: #7f00ff;  
+    --panel-bg: rgba(5, 2, 10, 0.25);
+  }
+
+  /* THEME OVERRIDES */
+  body[data-theme="matrix"] {
+    --bg-color: #000500;
+    --panel-bg: rgba(0, 10, 0, 0.6);
+    --theme-color: #00ff00 !important;
+    --cyan: #00ff00; --orange: #00aa00; --neon-red: #00ff00; --gold: #00ff00; --hot-pink: #00aa00; --electric-blue: #00ff00; --magenta: #00ff00;
+  }
+  body[data-theme="bloodmoon"] {
+    --bg-color: #0a0002;
+    --panel-bg: rgba(15, 0, 5, 0.4);
+    --theme-color: #ff0033 !important;
+    --cyan: #ff0033; --orange: #cc0000; --neon-red: #ff0033; --gold: #ff3366; --hot-pink: #cc0033; --electric-blue: #ff0033; --magenta: #990000;
+  }
+
+  body {
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    font-family: 'Courier New', Courier, monospace;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background-color: var(--bg-color);
+    overflow: hidden; color: white; perspective: 1200px;
+    cursor: crosshair; user-select: none;
+    transition: background-color 1s ease;
+  }
+  body:active { cursor: grabbing; }
+
+  /* INTRO SEQUENCE STYLES */
+  #init-screen {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000; z-index: 10000; display: flex; align-items: center; justify-content: center;
+    color: #444; letter-spacing: 5px; font-size: 14px; cursor: pointer; transition: opacity 0.5s;
+  }
+  #cinematic-intro {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000; z-index: 9999; display: flex; align-items: center; justify-content: center;
+    pointer-events: none; transition: opacity 2s ease;
+  }
+  #cinematic-text {
+    font-size: 6rem; font-weight: 900; letter-spacing: 30px; margin-left: 30px;
+    color: transparent; -webkit-text-stroke: 1px rgba(255, 0, 0, 0); text-transform: uppercase;
+    transform: scale(0.8); opacity: 0; text-shadow: none;
+  }
+  .batman-reveal {
+    animation: batmanIn 4s cubic-bezier(0.2, 0, 0.1, 1) forwards;
+  }
+  @keyframes batmanIn {
+    0% { opacity: 0; transform: scale(0.9); -webkit-text-stroke: 1px rgba(255, 0, 0, 0); text-shadow: 0 0 0px #ff0000; }
+    40% { opacity: 1; -webkit-text-stroke: 1px rgba(255, 30, 30, 0.8); text-shadow: 0 0 20px #ff0000; color: transparent; }
+    80% { opacity: 1; color: #ff0000; text-shadow: 0 0 40px #ff0000; transform: scale(1.05); filter: brightness(1); }
+    100% { opacity: 1; color: #fff; text-shadow: 0 0 100px #fff; transform: scale(1.1); filter: brightness(3); }
+  }
+  #flash-bang {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #fff;
+    z-index: 9998; opacity: 0; pointer-events: none;
+  }
+
+  /* MAIN UI STYLES */
+  #main-ui { opacity: 0; transition: opacity 2s ease; display: contents; }
+  
+  #canvas-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+
+  .scanlines {
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+    background-size: 100% 4px; pointer-events: none; z-index: 1;
+  }
+
+  .theme-selector {
+    position: absolute; top: 20px; left: 20px; z-index: 5; display: flex; gap: 10px;
+  }
+  .theme-btn {
+    background: rgba(0,0,0,0.5); border: 1px solid #444; color: #888; padding: 5px 10px;
+    font-size: 10px; letter-spacing: 2px; cursor: pointer; border-radius: 4px; transition: all 0.3s;
+  }
+  .theme-btn:hover, .theme-btn.active { border-color: var(--theme-color); color: #fff; box-shadow: 0 0 10px var(--theme-color); }
+
+  @keyframes panelGlow {
+    0% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 15px rgba(255,255,255,0.1); }
+    100% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 40px var(--theme-color); }
+  }
+
+  .glass-panel {
+    position: relative; z-index: 2;
+    background: var(--panel-bg); 
+    backdrop-filter: blur(12px) saturate(180%); -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 16px; padding: 40px; width: 750px; max-width: 90%;
+    display: flex; flex-direction: column; align-items: center;
+    transition: transform 0.1s ease-out, box-shadow 0.2s ease, background 1s ease;
+    transform-style: preserve-3d; animation: panelGlow 3s infinite alternate ease-in-out;
+  }
+
+  .title-wrapper { position: relative; margin: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; }
+  
+  .top-warning {
+    margin-top: 15px; font-size: 13px; color: var(--orange); text-align: center; text-transform: uppercase;
+    letter-spacing: 1.5px; text-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
+  }
+
+  h1 {
+    margin: 0; font-weight: 900; letter-spacing: 12px; font-size: 4.5rem; color: #fff;
+    text-transform: uppercase; text-align: center;
+    text-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 15px var(--theme-color), 0 0 30px var(--theme-color);
+    transition: all 0.3s ease; cursor: pointer;
+  }
+  h1:hover {
+    letter-spacing: 16px; transform: scale(1.02);
+    text-shadow: 0 0 10px rgba(255,255,255,1), 0 0 25px var(--theme-color), 0 0 50px var(--theme-color);
+  }
+
+  .splash-quote {
+    position: absolute; top: -15px; right: -80px; color: #ffea00; font-weight: 900; font-size: 18px; 
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 234, 0, 0.6);
+    transform: rotate(-15deg); pointer-events: auto; cursor: crosshair; white-space: nowrap; transition: transform 0.2s;
+    animation: splashBounce 0.4s infinite alternate ease-in-out;
+  }
+  .splash-quote:hover {
+    animation: none; transform: scale(1.2) rotate(10deg); color: var(--theme-color); text-shadow: 1px 1px 0 #000, 0 0 15px var(--theme-color);
+  }
+  @keyframes splashBounce { 0% { transform: scale(1) rotate(-15deg); } 100% { transform: scale(1.05) rotate(-15deg); } }
+
+  .grid-container {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; max-height: 55vh;
+    overflow-y: auto; padding: 10px; transform: translateZ(25px);
+  }
+  .grid-container::-webkit-scrollbar { width: 0; }
+
+  .place-btn {
+    background: rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.15); color: #e0e0e0;
+    padding: 18px; font-size: 18px; font-family: inherit; font-weight: bold; letter-spacing: 3px; cursor: crosshair; border-radius: 8px;
+    transition: all 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.4s ease-out, transform 0.3s ease-out;
+    position: relative; display: flex; align-items: center; justify-content: center; flex-direction: column; overflow: hidden;
+  }
+  .place-btn > * { position: relative; z-index: 1; }
+  .place-btn:hover {
+    background: rgba(255, 255, 255, 0.08); transform: scale(1.01); border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .place-btn.is-cyan { border-color: var(--cyan); }
+  .place-btn.is-orange { border-color: var(--orange); }
+  .place-btn.is-neon-red { border-color: var(--neon-red); }
+  .place-btn.is-gold { border-color: var(--gold); }
+  .place-btn.is-bright-green { border-color: var(--bright-green); }
+  .place-btn.is-hot-pink { border-color: var(--hot-pink); }
+  .place-btn.is-electric-blue { border-color: var(--electric-blue); }
+  .place-btn.is-magenta { border-color: var(--magenta); }
+
+  .place-btn.is-cyan:hover { box-shadow: 0 0 15px 5px rgba(0, 229, 255, 0.7); }
+  .place-btn.is-orange:hover { box-shadow: 0 0 15px 5px rgba(255, 102, 0, 0.7); }
+  .place-btn.is-neon-red:hover { box-shadow: 0 0 15px 5px rgba(255, 7, 58, 0.7); }
+  .place-btn.is-gold:hover { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7); }
+  .place-btn.is-bright-green:hover { box-shadow: 0 0 15px 5px rgba(50, 205, 50, 0.7); }
+  .place-btn.is-hot-pink:hover { box-shadow: 0 0 15px 5px rgba(255, 0, 170, 0.7); }
+  .place-btn.is-electric-blue:hover { box-shadow: 0 0 15px 5px rgba(0, 127, 255, 0.7); }
+  .place-btn.is-magenta:hover { box-shadow: 0 0 15px 5px rgba(255, 0, 255, 0.7); }
+
+  .status-working { font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
+  .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.9); }
+  .status-warning { font-size: 11px; color: rgba(255, 102, 0, 0.6); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
+  .place-btn:hover .status-warning { color: rgba(255, 102, 0, 1); }
+
+  .test-tool { position: absolute; bottom: 20px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
+  .test-tool:hover { opacity: 1; }
+  .test-input { background: #111; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; font-family: inherit; width: 200px; cursor: text;}
+  .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
+  .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
+</style>
+</head>
+<body>
+
+  <!-- INIT OVERLAYS -->
+  <div id="init-screen">CLICK TO INITIATE SEQUENCE</div>
+  
+  <div id="cinematic-intro">
+    <div id="cinematic-text">COMPILATION</div>
+  </div>
+  <div id="flash-bang"></div>
+
+  <!-- MAIN UI (Hidden until intro finishes) -->
+  <div id="main-ui">
+    <div class="theme-selector">
+      <button class="theme-btn active" onclick="setTheme('spectrum', this)">SPECTRUM</button>
+      <button class="theme-btn" onclick="setTheme('matrix', this)">MATRIX</button>
+      <button class="theme-btn" onclick="setTheme('bloodmoon', this)">BLOOD MOON</button>
+    </div>
+
+    <canvas id="canvas-bg"></canvas>
+    <div class="scanlines"></div>
+
+    <div class="glass-panel" id="tilt-panel">
+      <div class="title-wrapper">
+        <h1 id="main-title">COMPILATION</h1>
+        <div class="splash-quote" id="splash-text"></div>
+        <div class="top-warning">if you visit these sites without using compilation they wont work when you try again</div>
+      </div>
+      <div class="grid-container" id="menu"></div>
+    </div>
+
+    <div class="test-tool">
+      <input type="text" id="testUrl" class="test-input" placeholder="URL to Hex">
+      <button onclick="testLink()" class="test-btn">ENCODE</button>
+    </div>
+  </div>
+
+  <script>
+    // --- AUDIO SYSTEM (Web Audio API) ---
+    let audioCtx;
+    function initAudio() {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playHoverSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(300, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+    }
+
+    function playClickSound() {
+      if (!audioCtx) return;
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(400, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(600, audioCtx.currentTime + 0.05);
+      gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+    }
+
+    function playBatmanRumble() {
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(20, audioCtx.currentTime); // Deep rumble
+      osc.frequency.linearRampToValueAtTime(55, audioCtx.currentTime + 3.5); // Rises slightly
+      gain.gain.setValueAtTime(0, audioCtx.currentTime);
+      gain.gain.linearRampToValueAtTime(0.3, audioCtx.currentTime + 3); // Swells up
+      gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 3.8); // Cuts out
+      osc.connect(gain); gain.connect(audioCtx.destination);
+      osc.start(); osc.stop(audioCtx.currentTime + 4);
+    }
+
+    function playBootChord() {
+      const frequencies = [220, 277.18, 329.63, 440]; // A Major chord
+      frequencies.forEach((freq, index) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = index % 2 === 0 ? 'sine' : 'triangle';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 2.5);
+        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.start(); osc.stop(audioCtx.currentTime + 2.5);
+      });
+    }
+
+    // --- INTRO SEQUENCE ---
+    document.getElementById('init-screen').addEventListener('click', () => {
+      initAudio();
+      document.getElementById('init-screen').style.opacity = '0';
+      setTimeout(() => document.getElementById('init-screen').style.display = 'none', 500);
+
+      // Start Batman fade
+      const cinematicText = document.getElementById('cinematic-text');
+      cinematicText.classList.add('batman-reveal');
+      playBatmanRumble();
+
+      // The color explosion reveal
+      setTimeout(() => {
+        const flash = document.getElementById('flash-bang');
+        flash.style.opacity = '1';
+        flash.style.transition = 'opacity 0.1s';
+        
+        setTimeout(() => {
+          document.getElementById('cinematic-intro').style.display = 'none';
+          document.getElementById('main-ui').style.opacity = '1';
+          flash.style.transition = 'opacity 1.5s ease-out';
+          flash.style.opacity = '0';
+          playBootChord();
+        }, 150);
+      }, 3500); // 3.5 seconds into the rumble
+    });
+
+    // --- THEME SYSTEM ---
+    let currentTheme = 'spectrum';
+    function setTheme(themeName, btnElement) {
+      currentTheme = themeName;
+      document.body.setAttribute('data-theme', themeName);
+      
+      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+      if(btnElement) btnElement.classList.add('active');
+      playClickSound();
+
+      // Update static variables for particle engine
+      if (themeName === 'matrix') {
+        document.documentElement.style.setProperty('--theme-color', '#00ff00');
+      } else if (themeName === 'bloodmoon') {
+        document.documentElement.style.setProperty('--theme-color', '#ff0033');
+      }
+    }
+
+    // --- DATA & DOM POPULATION ---
+    const quotes = [
+      "100% legal", "Also try Opera GX", "Never leave your pie in for too long",
+      "Remember the good old days", "RIP Sweet Tea", "JC>CC", "T-cubed",
+      "Takis! Takis! Takis!", "does anyone even read these?", "Lafayette B.",
+      "No Oil rigs here", "say grenade 10 times fast", "2-Crack, Plumbous, Rodrick, Slopadopalis",
+      "BLEHELEHEHHEEHH", "Stay Strong Showtime Abdul Al Baker", "Apple pie is good",
+      "time to get some stuff done", "Travis or Youngboy?", "This site has 1.3K views as of Feb 26",
+      "are you rushing or are you dragging?", "Not quite my tempo...", "That's my tempo..."
+    ];
+    document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+
+    const places = [
+      { label: "PIE PLACE 01", hex: "68747470733a2f2f736f6469756d2d3568382e70616765732e646576", colorClass: 'is-cyan', warning: true }, 
+      { label: "PIE PLACE 02", hex: "68747470733a2f2f737a2d67616d65732e6769746875622e696f", colorClass: 'is-orange' }, 
+      { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", colorClass: 'is-neon-red', warning: true }, 
+      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold' }, 
+      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green' }, 
+      { label: "PIE PLACE 06", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f736177352e392e352f", colorClass: 'is-hot-pink', isCreator: true }, 
+      { label: "PIE PLACE 07", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f756d6272656c6c612f", colorClass: 'is-electric-blue' }, 
+      { label: "PIE PLACE 08", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f636f696c2f", colorClass: 'is-magenta' }
+    ];
+
+    const menu = document.getElementById('menu');
+    const panel = document.getElementById('tilt-panel');
+
+    places.forEach(p => {
+      const btn = document.createElement('button');
+      btn.className = 'place-btn';
+      if (p.colorClass) btn.classList.add(p.colorClass);
+
+      let bottomLabel = '';
+      if (p.isCreator) {
+        bottomLabel = `<div style="font-size: 10px; color: var(--hot-pink); margin-top: 4px; letter-spacing: 1px;">MADE BY MEOWMASTER</div>`;
+      }
+      
+      let statusHtml = p.warning 
+        ? `<span class="status-warning">sometimes doesn't work</span>`
+        : `<span class="status-working">working</span>`;
+
+      btn.innerHTML = `<span>${p.label}</span>${bottomLabel}${statusHtml}`;
+      
+      // Audio bindings
+      btn.addEventListener('mouseenter', playHoverSound);
+      btn.onclick = () => { playClickSound(); initSession(p.hex); };
+      
+      menu.appendChild(btn);
+    });
+
+    // Audio bindings for theme buttons
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+      btn.addEventListener('mouseenter', playHoverSound);
+    });
+
+    document.addEventListener('mousemove', (e) => {
+      let xAxis = (window.innerWidth / 2 - e.pageX) / 150; 
+      let yAxis = (window.innerHeight / 2 - e.pageY) / -150;
+      panel.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+    });
+    
+    document.addEventListener('mouseleave', () => {
+      panel.style.transform = `rotateY(0deg) rotateX(0deg)`;
+    });
+
+    function initSession(h) {
+      let u = '';
+      for (let i = 0; i < h.length; i += 2) u += String.fromCharCode(parseInt(h.substr(i, 2), 16));
+      launch(u);
+    }
+
+    function testLink() {
+      playClickSound();
+      const url = document.getElementById('testUrl').value;
+      if(!url) return;
+      let hex = '';
+      for(let i=0;i<url.length;i++) hex += url.charCodeAt(i).toString(16);
+      launch(url);
+    }
+
+    function launch(url) {
+      const id = Math.floor(Math.random() * 100000);
+      const sep = url.includes('?') ? '&' : '?';
+      const target = `${url}${sep}session=${id}`;
+
+      const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
+      const greetings = ["good luck", "have fun", "Goodbye", "See ya"];
+      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+      const w = window.open('about:blank', '_blank');
+      if (w) {
+        w.document.write(`
+          <style>
+            html, body { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh; color: #fff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            .msg { font-size: 36px; font-weight: bold; z-index: 10; animation: float 2s infinite alternate ease-in-out; text-align: center; transition: opacity 0.5s ease; text-shadow: 0 0 15px ${currentColor}, 0 0 30px ${currentColor}; pointer-events: none; }
+            .sub { font-size: 18px; color: rgba(255,255,255,0.8); margin-top: 15px; text-shadow: none; pointer-events: none; }
+            @keyframes float { 0% { transform: translateY(-5px); } 100% { transform: translateY(5px); } }
+            iframe { display: block; width: 100vw; height: 100vh; border: none; margin: 0; padding: 0; position: absolute; top: 0; left: 0; z-index: 3; background: #000; opacity: 0; transform: scale(0.01); transition: transform 0.65s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.3s ease-out; }
+            canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; transition: opacity 1.5s ease-in-out; }
+          </style>
+          
+          <canvas id="warpCanvas"></canvas>
+          <iframe id="frm" src="${target}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"></iframe>
+          <div class="msg" id="ldr">${randomGreeting}<div class="sub">-Meowmaster</div></div>
+          
+          <script>
+            const wc = document.getElementById('warpCanvas');
+            const wctx = wc.getContext('2d');
+            let stars = [];
+            wc.width = window.innerWidth; wc.height = window.innerHeight;
+            
+            for(let i=0; i<600; i++) {
+              stars.push({ x: Math.random()*wc.width-wc.width/2, y: Math.random()*wc.height-wc.height/2, z: Math.random()*wc.width, pz: Math.random()*wc.width });
+            }
+            
+            let speed = 0.5; let animationFrameId; let isTransitioning = false;
+            function animateWarp() {
+              speed += 0.2 + (speed * 0.025); 
+              if (speed > 130 && !isTransitioning) {
+                isTransitioning = true;
+                document.getElementById('ldr').style.opacity = '0';
+                const frame = document.getElementById('frm');
+                frame.style.opacity = '1'; frame.style.transform = 'scale(1)';
+                setTimeout(() => { wc.style.opacity = '0'; }, 800);
+                setTimeout(() => { cancelAnimationFrame(animationFrameId); }, 2500);
+              }
+              wctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; wctx.fillRect(0,0,wc.width,wc.height);
+              let cx = wc.width/2; let cy = wc.height/2;
+              
+              for(let i=0; i<stars.length; i++) {
+                stars[i].pz = stars[i].z; stars[i].z -= speed;
+                if(stars[i].z <= 1) { stars[i].z = wc.width; stars[i].pz = wc.width; stars[i].x = Math.random()*wc.width-wc.width/2; stars[i].y = Math.random()*wc.height-wc.height/2; }
+                let sx = (stars[i].x / stars[i].z) * wc.width + cx; let sy = (stars[i].y / stars[i].z) * wc.width + cy;
+                let px = (stars[i].x / stars[i].pz) * wc.width + cx; let py = (stars[i].y / stars[i].pz) * wc.width + cy;
+                wctx.beginPath(); wctx.moveTo(px, py); wctx.lineTo(sx, sy);
+                wctx.lineWidth = Math.max(0.5, (1 - stars[i].z/wc.width) * 4);
+                wctx.strokeStyle = (i % 4 === 0) ? '${currentColor}' : '#ffffff'; 
+                wctx.stroke();
+              }
+              if (!isTransitioning || wc.style.opacity !== '0') { animationFrameId = requestAnimationFrame(animateWarp); }
+            }
+            animateWarp();
+          <\/script>
+        `);
+        w.document.close();
+      }
+    }
+
+    // --- MAIN PHYSICS ENGINE ---
+    const canvas = document.getElementById('canvas-bg');
+    const ctx = canvas.getContext('2d');
+    let particlesArray = []; let ripplesArray = []; 
+    let globalHue = 180; 
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+    let mouse = { x: null, y: null };
+    let isLeftMouseDown = false; let isRightMouseDown = false;
+    let isTimeFrozen = false; let isOvercharged = false; 
+
+    window.addEventListener('mousemove', function(e) { mouse.x = e.x; mouse.y = e.y; });
+    window.addEventListener('mouseout', function() { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false;});
+    window.addEventListener('mousedown', (e) => { 
+      if (e.button === 0) { isLeftMouseDown = true; initAudio(); }
+      if (e.button === 2) isRightMouseDown = true;
+    });
+    window.addEventListener('contextmenu', e => e.preventDefault());
+    window.addEventListener('keydown', (e) => { if (e.code === 'Space') isTimeFrozen = true; if (e.key === 'Shift') isOvercharged = true; });
+    window.addEventListener('keyup', (e) => { if (e.code === 'Space') isTimeFrozen = false; if (e.key === 'Shift') isOvercharged = false; });
+
+    document.getElementById('main-title').addEventListener('dblclick', (e) => {
+      isOvercharged = true; setTimeout(() => isOvercharged = false, 1500);
+      for(let i=0; i<15; i++) {
+        setTimeout(() => { ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, '#ff00aa')); }, i * 100);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => { 
+      if (e.button === 0) {
+        isLeftMouseDown = false; 
+        if (mouse.x === undefined || mouse.y === undefined) return;
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, `hsl(${globalHue}, 100%, 50%)`)); 
+
+        for (let i = 0; i < particlesArray.length; i++) {
+          let dx = particlesArray[i].x - mouse.x; let dy = particlesArray[i].y - mouse.y;
+          let distance = Math.sqrt(dx*dx + dy*dy);
+          if (distance < 400) { 
+            let force = (400 - distance) / 6; 
+            let dirX = dx / distance; let dirY = dy / distance;
+            particlesArray[i].vx += dirX * force; particlesArray[i].vy += dirY * force;
+          }
+        }
+      }
+      if (e.button === 2) {
+        isRightMouseDown = false;
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, '#ff00aa')); 
+      }
+    });
+
+    class Ripple {
+      constructor(x, y, isMega = false, colorStr) {
+        this.x = x; this.y = y; this.radius = 10; this.alpha = 1; 
+        this.colorStr = colorStr; this.lineWidth = isMega ? 20 : 8; this.expansionRate = isMega ? 30 : 15;
+      }
+      draw() {
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        let hslMatch = this.colorStr.match(/\d+/g);
+        if(hslMatch && hslMatch.length >= 3) { ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`; } 
+        else { ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; }
+        ctx.lineWidth = this.lineWidth; ctx.shadowBlur = 30; ctx.shadowColor = this.colorStr; ctx.stroke(); ctx.shadowBlur = 0;
+      }
+      update() {
+        let timeScale = isTimeFrozen ? 0.1 : 1;
+        this.radius += this.expansionRate * timeScale; this.alpha -= (0.1 * timeScale); this.lineWidth *= (1 - (0.08 * timeScale)); 
+      }
+    }
+
+    class Particle {
+      constructor(x, y, vx, vy, size) {
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy; this.baseVx = vx; this.baseVy = vy;
+        this.size = size; this.hueOffset = (Math.random() * 40) - 20; 
+      }
+      draw() {
+        ctx.beginPath(); ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        
+        let fillStyle;
+        if (currentTheme === 'spectrum') {
+          fillStyle = isOvercharged ? '#ff00aa' : `hsl(${globalHue + this.hueOffset}, 100%, 50%)`;
+        } else if (currentTheme === 'matrix') {
+          fillStyle = isOvercharged ? '#ffffff' : `hsl(120, 100%, ${50 + this.hueOffset/2}%)`;
+        } else if (currentTheme === 'bloodmoon') {
+          fillStyle = isOvercharged ? '#ff9999' : `hsl(348, 100%, ${40 + this.hueOffset/2}%)`;
+        }
+
+        ctx.fillStyle = fillStyle; ctx.shadowBlur = isOvercharged ? 25 : 15; ctx.shadowColor = fillStyle; ctx.fill(); ctx.shadowBlur = 0; 
+      }
+      update() {
+        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+          this.vx = -this.vx; this.baseVx = -this.baseVx;
+          if(this.x < 0) this.x = this.size; else this.x = canvas.width - this.size;
+        }
+        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+          this.vy = -this.vy; this.baseVy = -this.baseVy;
+          if(this.y < 0) this.y = this.size; else this.y = canvas.height - this.size;
+        }
+
+        if (isOvercharged) { this.vx += (Math.random() - 0.5) * 5; this.vy += (Math.random() - 0.5) * 5; }
+
+        if(mouse.x != undefined && mouse.y != undefined) {
+          let dx = mouse.x - this.x; let dy = mouse.y - this.y; let distance = Math.sqrt(dx*dx + dy*dy);
+          if (distance < 600) {
+            let dirX = dx / distance; let dirY = dy / distance; let force = (600 - distance) / 600; 
+
+            if (isLeftMouseDown) {
+              this.vx += dirX * force * 6; this.vy += dirY * force * 6; this.vx += dirY * force * 2.5; this.vy -= dirX * force * 2.5;
+              if (distance < 50) { this.vx *= 0.2; this.vy *= 0.2; this.x += (mouse.x - this.x) * 0.15; this.y += (mouse.y - this.y) * 0.15; }
+            } else if (isRightMouseDown) {
+              this.vx -= dirX * force * 4; this.vy -= dirY * force * 4;
+            } else if (distance < 120 && !isOvercharged) {
+              let hoverForce = (120 - distance) / 120; this.vx -= dirX * hoverForce * 0.5; this.vy -= dirY * hoverForce * 0.5;
+            }
+          }
+        }
+
+        let currentSpeedSq = this.vx * this.vx + this.vy * this.vy; let baseSpeedSq = this.baseVx * this.baseVx + this.baseVy * this.baseVy;
+        if (currentSpeedSq > baseSpeedSq * 2 && !isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
+          this.vx *= 0.93; this.vy *= 0.93;
+        } else if (!isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
+          this.vx += (this.baseVx - this.vx) * 0.02; this.vy += (this.baseVy - this.vy) * 0.02;
+        }
+
+        let timeScale = isTimeFrozen ? 0.05 : 1;
+        this.x += this.vx * timeScale; this.y += this.vy * timeScale;
+        this.draw();
+      }
+    }
+
+    function initParticles() {
+      particlesArray = []; let numberOfParticles = (canvas.height * canvas.width) / 8000; 
+      for (let i = 0; i < numberOfParticles; i++) {
+        let size = (Math.random() * 3) + 2; 
+        let x = Math.random() * (innerWidth - size * 2) + size; let y = Math.random() * (innerHeight - size * 2) + size;
+        let vx = (Math.random() * 2) - 1; let vy = (Math.random() * 2) - 1;
+        particlesArray.push(new Particle(x, y, vx, vy, size));
+      }
+    }
+
+    function connectParticles() {
+      let baseHue, sat, light;
+      if (currentTheme === 'spectrum') {
+        baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
+        sat = "100%"; light = isTimeFrozen ? "50%" : "60%";
+      } else if (currentTheme === 'matrix') {
+        baseHue = 120; sat = "100%"; light = isTimeFrozen ? "30%" : "40%";
+      } else if (currentTheme === 'bloodmoon') {
+        baseHue = 348; sat = "100%"; light = isTimeFrozen ? "30%" : "40%";
+      }
+
+      for (let a = 0; a < particlesArray.length; a++) {
+        for (let b = a; b < particlesArray.length; b++) {
+          let dx = particlesArray[a].x - particlesArray[b].x; let dy = particlesArray[a].y - particlesArray[b].y;
+          let distance = dx*dx + dy*dy;
+          let connectionLimit = isOvercharged ? 25000 : 15000;
+          
+          if (distance < connectionLimit) {
+            let opacityValue = 1 - (distance / connectionLimit);
+            ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
+            ctx.lineWidth = isTimeFrozen ? 3 : (isOvercharged ? 2.5 : 2); 
+            ctx.beginPath(); ctx.moveTo(particlesArray[a].x, particlesArray[a].y); ctx.lineTo(particlesArray[b].x, particlesArray[b].y); ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function drawVortexCore() {
+      if ((isLeftMouseDown || isRightMouseDown) && mouse.x != undefined) {
+        ctx.beginPath(); ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2); ctx.fillStyle = '#ffffff'; ctx.shadowBlur = 40;
+        
+        if (currentTheme === 'spectrum') {
+          ctx.shadowColor = isRightMouseDown ? '#ff00aa' : `hsl(${globalHue}, 100%, 50%)`;
+        } else if (currentTheme === 'matrix') {
+          ctx.shadowColor = isRightMouseDown ? '#ffffff' : '#00ff00';
+        } else if (currentTheme === 'bloodmoon') {
+          ctx.shadowColor = isRightMouseDown ? '#ff00aa' : '#ff0033';
+        }
+
+        ctx.fill(); ctx.shadowBlur = 0;
+      }
+    }
+
+    function animateParticles() {
+      requestAnimationFrame(animateParticles);
+      
+      if (currentTheme === 'spectrum') {
+        globalHue += 0.15; if (globalHue >= 360) globalHue = 0;
+        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+      }
+      
+      if (isTimeFrozen || isOvercharged) {
+        ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      for (let i = ripplesArray.length - 1; i >= 0; i--) { ripplesArray[i].update(); ripplesArray[i].draw(); if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1); }
+      for (let i = 0; i < particlesArray.length; i++) { particlesArray[i].update(); }
+      connectParticles(); drawVortexCore();
+    }
+
+    window.addEventListener('resize', function() { canvas.width = innerWidth; canvas.height = innerHeight; initParticles(); });
+    initParticles(); animateParticles();
+  </script>
+</body>
+</html>
