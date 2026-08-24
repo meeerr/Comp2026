@@ -18,7 +18,7 @@
     --neon-red: #ff073a;     
     --forest-green: #228b22; 
     --purple-haze: #7f00ff;  
-    --bg-color: #05010a; /* Dynamic background variable */
+    --bg-color: #05010a; 
   }
 
   body {
@@ -241,7 +241,6 @@
   .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
   .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
 
-  /* --- NEW: THEME SELECTOR UI --- */
   .theme-selector {
     position: fixed;
     top: 25px;
@@ -286,7 +285,6 @@
     text-shadow: none;
   }
 
-  /* Theme Specific Global Overrides */
   body.theme-terminal { --bg-color: #000500; }
   body.theme-terminal .scanlines { opacity: 0.8; background-size: 100% 3px; }
   body.theme-terminal .glass-panel { background: rgba(0, 15, 0, 0.4); border-color: rgba(0,255,0,0.2); }
@@ -305,7 +303,6 @@
   <canvas id="canvas-bg"></canvas>
   <div class="scanlines"></div>
 
-  <!-- THEME SELECTOR -->
   <div class="theme-selector">
     <button class="theme-btn-sel active" data-theme="default">NEON</button>
     <button class="theme-btn-sel" data-theme="terminal">SYS</button>
@@ -328,7 +325,6 @@
   </div>
 
   <script>
-    // --- THEME LOGIC ---
     let currentTheme = 'default';
     const themeButtons = document.querySelectorAll('.theme-btn-sel');
     
@@ -338,8 +334,6 @@
         btn.classList.add('active');
         currentTheme = btn.dataset.theme;
         document.body.className = `theme-${currentTheme}`;
-        
-        // Force instant particle reset on theme change for clean transition
         initParticles();
       });
     });
@@ -371,6 +365,11 @@
     document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
 
     const places = [
+      // The new Ultimate Stash button
+      // NOTE: Replace the hex below with the hex of your hosted scrubbed stash URL. 
+      // Right now, this hex stands for "https://your-stash-url.com"
+      { label: "ULTIMATE STASH", hex: "68747470733a2f2f796f75722d73746173682d75726c2e636f6d", colorClass: 'is-bright-green', isFavorite: true },
+      
       { label: "PIE PLACE 01", hex: "68747470733a2f2f736f6469756d2d3568382e70616765732e646576", colorClass: 'is-cyan', warning: true },
       { label: "PIE PLACE 02", hex: "68747470733a2f2f737a2d67616d65732e6769746875622e696f", colorClass: 'is-orange', isHot: true },
       { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", colorClass: 'is-neon-red', warning: true, isNew: false },
@@ -508,7 +507,6 @@
       }
     }
 
-    // MAIN PHYSICS ENGINE
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
@@ -595,9 +593,7 @@
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         
-        // Ensure ripple matches themes properly
         if(this.colorStr.startsWith('#')) {
-            // hex to rgba manual logic for the custom theme colors
             ctx.strokeStyle = this.colorStr;
             ctx.globalAlpha = this.alpha;
         } else {
@@ -610,11 +606,11 @@
         }
         
         ctx.lineWidth = this.lineWidth;
-        ctx.shadowBlur = 30;
+        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : 30; // Disabled shadows for terminal
         ctx.shadowColor = this.colorStr;
         ctx.stroke();
         ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1; // reset
+        ctx.globalAlpha = 1; 
       }
       update() {
         let timeScale = isTimeFrozen ? 0.1 : 1;
@@ -633,9 +629,8 @@
       }
       draw() {
         ctx.beginPath();
-        
-        // --- THEME SHAPE & COLOR LOGIC ---
         let fillStyle;
+        
         if (currentTheme === 'terminal') {
           fillStyle = isOvercharged ? '#ffffff' : '#00ff00';
           ctx.rect(this.x - this.size, this.y - this.size, this.size * 2.5, this.size * 2.5);
@@ -644,16 +639,15 @@
           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
         } else if (currentTheme === 'crimson') {
           fillStyle = isOvercharged ? '#ff0000' : '#ff073a';
-          ctx.arc(this.x, this.y, this.size * (Math.random() * 0.5 + 0.8), 0, Math.PI * 2, false); // Glitchy size
+          ctx.arc(this.x, this.y, this.size * (Math.random() * 0.5 + 0.8), 0, Math.PI * 2, false);
         } else {
-          // Default Neon logic
           let myHue = globalHue + this.hueOffset;
           fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
           ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
         }
 
         ctx.fillStyle = fillStyle;
-        ctx.shadowBlur = isOvercharged ? 25 : 15;
+        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : (isOvercharged ? 25 : 15); // Disabled shadows for terminal
         ctx.shadowColor = fillStyle;
         ctx.fill();
         ctx.shadowBlur = 0; 
@@ -727,9 +721,9 @@
 
     function initParticles() {
       particlesArray = [];
+      // Drastically lower particle count for the terminal theme to improve performance
       let numberOfParticles = (canvas.height * canvas.width) / 8000; 
-      // Fewer particles for terminal to make it cleaner
-      if (currentTheme === 'terminal') numberOfParticles *= 0.7; 
+      if (currentTheme === 'terminal') numberOfParticles = (canvas.height * canvas.width) / 25000; 
       
       for (let i = 0; i < numberOfParticles; i++) {
         let size = (Math.random() * 3) + 2; 
@@ -753,7 +747,6 @@
           if (distance < connectionLimit) {
             let opacityValue = 1 - (distance / connectionLimit);
             
-            // --- THEME CONNECTION COLOR LOGIC ---
             if (currentTheme === 'terminal') {
                 ctx.strokeStyle = `rgba(0, 255, 0, ${opacityValue * (isOvercharged ? 1 : 0.5)})`;
             } else if (currentTheme === 'synth') {
@@ -785,7 +778,7 @@
         ctx.beginPath();
         ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 40;
+        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : 40; // Disabled shadows for terminal
         
         let c = `hsl(${globalHue}, 100%, 50%)`;
         if (currentTheme === 'terminal') c = '#00ff00';
@@ -801,7 +794,6 @@
     function animateParticles() {
       requestAnimationFrame(animateParticles);
       
-      // Update global theme variable based on selector
       if (currentTheme === 'default') {
         globalHue += 0.15;
         if (globalHue >= 360) globalHue = 0;
@@ -815,7 +807,6 @@
       }
       
       if (isTimeFrozen || isOvercharged) {
-        // adjust freeze/overcharge trailing color based on theme
         let overchargeColor = 'rgba(20, 0, 10, 0.25)';
         let freezeColor = 'rgba(5, 1, 10, 0.15)';
         
