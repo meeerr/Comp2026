@@ -5,296 +5,187 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPILATION</title>
 <style>
+  /* --- GLOBAL CSS VARIABLES (DEFAULT NEON THEME) --- */
   :root {
     --theme-color: #00ffff; 
-    --cyan: #00e5ff;         
-    --lime: #39ff14;         
-    --gold: #ffd700;         
-    --orange: #ff6600;       
-    --hot-pink: #ff00aa;     
-    --electric-blue: #007fff; 
-    --magenta: #ff00ff;      
-    --bright-green: #32cd32; 
-    --neon-red: #ff073a;     
-    --forest-green: #228b22; 
-    --purple-haze: #7f00ff;  
-    --bg-color: #05010a; 
+    --bg-color: #05010a;
+    --font-main: 'Courier New', Courier, monospace;
+    --panel-bg: rgba(5, 2, 10, 0.25);
+    --panel-border: 1px solid rgba(255, 255, 255, 0.1);
+    --panel-radius: 16px;
+    --panel-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05);
+    --text-color: #fff;
+    --title-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 15px var(--theme-color);
+    --btn-bg: rgba(0, 0, 0, 0.6);
+    --btn-border: 1px solid rgba(255, 255, 255, 0.15);
+    --btn-radius: 8px;
+    --btn-hover-scale: scale(1.01);
+    --canvas-display: block;
+    --scanline-display: block;
+    --css-bg-display: none;
+    --splash-color: #ffea00;
   }
 
   body {
-    margin: 0;
-    padding: 0;
-    width: 100vw;
-    height: 100vh;
-    font-family: 'Courier New', Courier, monospace;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
+    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    font-family: var(--font-main);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     background-color: var(--bg-color);
-    overflow: hidden;
-    color: white;
-    perspective: 1200px;
-    cursor: crosshair;
-    user-select: none;
-    transition: background-color 0.5s ease;
+    overflow: hidden; color: var(--text-color);
+    perspective: 1200px; cursor: crosshair; user-select: none;
+    transition: all 0.5s ease;
   }
+  body:active { cursor: grabbing; }
 
-  body:active {
-    cursor: grabbing;
-  }
-
-  #canvas-bg {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 0;
-  }
-
+  /* --- CANVAS & BACKGROUNDS --- */
+  #canvas-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: var(--canvas-display); }
+  
   .scanlines {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
     background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
-    background-size: 100% 4px;
-    pointer-events: none;
-    z-index: 1;
-    transition: opacity 0.5s ease;
+    background-size: 100% 4px; pointer-events: none; z-index: 1;
+    display: var(--scanline-display);
   }
 
-  @keyframes panelGlow {
-    0% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 15px rgba(255,255,255,0.1); }
-    100% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 40px var(--theme-color); }
+  /* CSS Backgrounds for non-particle themes */
+  .css-background {
+    position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
+    z-index: 0; display: var(--css-bg-display); pointer-events: none;
   }
 
+  /* --- THEME OVERRIDES --- */
+  
+  /* 1. BRUTALISM (Loud, Sharp, Edgy) */
+  body.theme-brutalism {
+    --bg-color: #f0f0f0; --text-color: #000;
+    --font-main: 'Impact', 'Arial Black', sans-serif;
+    --panel-bg: #fff; --panel-border: 4px solid #000; --panel-radius: 0px;
+    --panel-shadow: 12px 12px 0px #000;
+    --title-shadow: 4px 4px 0px #ff003c;
+    --btn-bg: #fff; --btn-border: 3px solid #000; --btn-radius: 0px;
+    --btn-hover-scale: translate(-4px, -4px);
+    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --theme-color: #ff003c; --splash-color: #000;
+  }
+  body.theme-brutalism .css-background {
+    background-image: radial-gradient(#000 2px, transparent 2px);
+    background-size: 30px 30px; opacity: 0.1;
+  }
+  body.theme-brutalism .place-btn { color: #000; box-shadow: 4px 4px 0px #000; }
+  body.theme-brutalism .place-btn:hover { box-shadow: 8px 8px 0px var(--theme-color); border-color: var(--theme-color); }
+  body.theme-brutalism .glass-panel { backdrop-filter: none; }
+
+  /* 2. MATCHA (Soft, Cozy, Clean) */
+  body.theme-matcha {
+    --bg-color: #f4efe6; --text-color: #4a5d23;
+    --font-main: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
+    --panel-bg: rgba(255, 255, 255, 0.7); --panel-border: 1px solid rgba(255,255,255,0.8);
+    --panel-radius: 40px; --panel-shadow: 0 20px 40px rgba(74, 93, 35, 0.1);
+    --title-shadow: none;
+    --btn-bg: #e8ecd7; --btn-border: 1px solid transparent; --btn-radius: 30px;
+    --btn-hover-scale: scale(1.03);
+    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --theme-color: #8da35c; --splash-color: #d4a373;
+  }
+  body.theme-matcha .css-background {
+    background: radial-gradient(circle at 15% 50%, rgba(141,163,92,0.15), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(212,163,115,0.15), transparent 25%);
+  }
+  body.theme-matcha .place-btn { color: #4a5d23; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+  body.theme-matcha .place-btn:hover { background: #fff; box-shadow: 0 10px 20px rgba(141,163,92,0.2); }
+  body.theme-matcha h1 { letter-spacing: 4px; font-weight: 700; color: #4a5d23; }
+  body.theme-matcha h1:hover { letter-spacing: 6px; }
+
+  /* 3. AERO (Y2K, Glossy, Frutiger Aero) */
+  body.theme-aero {
+    --bg-color: #0078d7; --text-color: #fff;
+    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --panel-bg: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
+    --panel-border: 1px solid rgba(255,255,255,0.6); --panel-radius: 12px;
+    --panel-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 2px 2px rgba(255,255,255,0.8);
+    --title-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    --btn-bg: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
+    --btn-border: 1px solid rgba(255,255,255,0.5); --btn-radius: 8px;
+    --btn-hover-scale: scale(1.02);
+    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --theme-color: #00ffcc; --splash-color: #a4ff00;
+  }
+  body.theme-aero .css-background {
+    background: linear-gradient(to bottom, #56ccf2, #2f80ed);
+    opacity: 0.8;
+  }
+  body.theme-aero .place-btn { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
+  body.theme-aero .place-btn:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.8); }
+
+  /* --- UI ELEMENTS --- */
   .glass-panel {
-    position: relative;
-    z-index: 2;
-    background: rgba(5, 2, 10, 0.25); 
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px;
-    padding: 40px;
-    width: 750px;
-    max-width: 90%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    transition: transform 0.1s ease-out, box-shadow 0.2s ease, background 0.5s ease;
-    transform-style: preserve-3d;
-    animation: panelGlow 3s infinite alternate ease-in-out;
+    position: relative; z-index: 2;
+    background: var(--panel-bg);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: var(--panel-border); border-radius: var(--panel-radius);
+    padding: 40px; width: 750px; max-width: 90%;
+    display: flex; flex-direction: column; align-items: center;
+    box-shadow: var(--panel-shadow);
+    transition: transform 0.1s ease-out, all 0.4s ease; transform-style: preserve-3d;
   }
 
-  .title-wrapper {
-    position: relative;
-    margin: 0 0 40px 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-  }
+  .title-wrapper { position: relative; margin: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; }
 
   .top-warning {
-    margin-top: 15px;
-    font-size: 13px;
-    color: var(--orange);
-    text-align: center;
-    text-transform: uppercase;
-    letter-spacing: 1.5px;
-    text-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
+    margin-top: 15px; font-size: 13px; color: var(--theme-color);
+    text-align: center; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;
   }
 
   h1 {
-    margin: 0;
-    font-weight: 900;
-    letter-spacing: 12px;
-    font-size: 4.5rem; 
-    color: #fff;
-    text-transform: uppercase;
-    text-align: center;
-    text-shadow: 
-      0 0 5px rgba(255,255,255,0.8),
-      0 0 15px var(--theme-color),
-      0 0 30px var(--theme-color);
-    transition: all 0.3s ease;
-    cursor: pointer;
+    margin: 0; font-weight: 900; letter-spacing: 12px; font-size: 4.5rem; 
+    color: var(--text-color); text-transform: uppercase; text-align: center;
+    text-shadow: var(--title-shadow); transition: all 0.3s ease; cursor: pointer;
   }
-
-  h1:hover {
-    letter-spacing: 16px;
-    transform: scale(1.02);
-    text-shadow: 
-      0 0 10px rgba(255,255,255,1),
-      0 0 25px var(--theme-color),
-      0 0 50px var(--theme-color);
-  }
+  h1:hover { transform: scale(1.02); }
 
   .splash-quote {
-    position: absolute;
-    top: -15px;
-    right: -80px; 
-    color: #ffea00;
-    font-weight: 900;
-    font-size: 18px; 
-    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 234, 0, 0.6);
-    transform: rotate(-15deg);
-    pointer-events: auto;
-    cursor: crosshair;
-    animation: splashBounce 0.4s infinite alternate ease-in-out;
-    white-space: nowrap;
-    transition: transform 0.2s;
+    position: absolute; top: -15px; right: -80px; 
+    color: var(--splash-color); font-weight: 900; font-size: 18px; 
+    transform: rotate(-15deg); pointer-events: auto; cursor: crosshair;
+    animation: splashBounce 0.4s infinite alternate ease-in-out; white-space: nowrap; transition: transform 0.2s;
   }
-
-  .splash-quote:hover {
-    animation: none;
-    transform: scale(1.2) rotate(10deg);
-    color: var(--theme-color);
-    text-shadow: 1px 1px 0 #000, 0 0 15px var(--theme-color);
-  }
-
-  @keyframes splashBounce {
-    0% { transform: scale(1) rotate(-15deg); }
-    100% { transform: scale(1.05) rotate(-15deg); }
-  }
+  @keyframes splashBounce { 0% { transform: scale(1) rotate(-15deg); } 100% { transform: scale(1.05) rotate(-15deg); } }
 
   .grid-container {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    width: 100%;
-    max-height: 55vh;
-    overflow-y: auto;
-    padding: 10px;
-    transform: translateZ(25px);
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
+    width: 100%; max-height: 55vh; overflow-y: auto; padding: 10px; transform: translateZ(25px);
   }
   .grid-container::-webkit-scrollbar { width: 0; }
 
   .place-btn {
-    background: rgba(0, 0, 0, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-    color: #e0e0e0;
-    padding: 18px;
-    font-size: 18px; 
-    font-family: inherit;
-    font-weight: bold;
-    letter-spacing: 3px; 
-    cursor: crosshair;
-    border-radius: 8px;
-    transition: all 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.4s ease-out, transform 0.3s ease-out;
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    overflow: hidden;
+    background: var(--btn-bg); border: var(--btn-border); color: var(--text-color);
+    padding: 18px; font-size: 18px; font-family: inherit; font-weight: bold;
+    letter-spacing: 2px; cursor: crosshair; border-radius: var(--btn-radius);
+    transition: all 0.2s ease-out; position: relative; display: flex;
+    align-items: center; justify-content: center; flex-direction: column; overflow: hidden;
   }
+  .place-btn > * { position: relative; z-index: 1; }
+  .place-btn:hover { transform: var(--btn-hover-scale); }
 
-  .place-btn > * {
-    position: relative;
-    z-index: 1;
-  }
-
-  .place-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: scale(1.01);
-    border-color: rgba(255, 255, 255, 0.4);
-  }
-
-  .place-btn.is-cyan { border-color: var(--cyan); }
-  .place-btn.is-orange { border-color: var(--orange); }
-  .place-btn.is-neon-red { border-color: var(--neon-red); }
-  .place-btn.is-gold { border-color: var(--gold); }
-  .place-btn.is-bright-green { border-color: var(--bright-green); }
-  .place-btn.is-hot-pink { border-color: var(--hot-pink); }
-  .place-btn.is-electric-blue { border-color: var(--electric-blue); }
-  .place-btn.is-magenta { border-color: var(--magenta); }
-  .place-btn.is-forest-green { border-color: var(--forest-green); }
-
-  .place-btn.is-cyan:hover { box-shadow: 0 0 15px 5px rgba(0, 229, 255, 0.7); }
-  .place-btn.is-orange:hover { box-shadow: 0 0 15px 5px rgba(255, 102, 0, 0.7); }
-  .place-btn.is-neon-red:hover { box-shadow: 0 0 15px 5px rgba(255, 7, 58, 0.7); }
-  .place-btn.is-gold:hover { box-shadow: 0 0 15px 5px rgba(255, 215, 0, 0.7); }
-  .place-btn.is-bright-green:hover { box-shadow: 0 0 15px 5px rgba(50, 205, 50, 0.7); }
-  .place-btn.is-hot-pink:hover { box-shadow: 0 0 15px 5px rgba(255, 0, 170, 0.7); }
-  .place-btn.is-electric-blue:hover { box-shadow: 0 0 15px 5px rgba(0, 127, 255, 0.7); }
-  .place-btn.is-magenta:hover { box-shadow: 0 0 15px 5px rgba(255, 0, 255, 0.7); }
-  .place-btn.is-forest-green:hover { box-shadow: 0 0 15px 5px rgba(34, 139, 34, 0.7); }
-
-  .mini-label {
-    font-size: 11px;
-    margin-bottom: 5px;
-    letter-spacing: 1px;
-    text-shadow: 0 0 8px currentColor;
-    animation: pulseBadge 1.5s infinite alternate ease-in-out;
-  }
+  .mini-label { font-size: 11px; margin-bottom: 5px; letter-spacing: 1px; animation: pulseBadge 1.5s infinite alternate ease-in-out; }
   @keyframes pulseBadge { 0% { opacity: 0.7; } 100% { opacity: 1; } }
 
-  .status-working { font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
-  .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.9); }
-  .status-warning { font-size: 11px; color: rgba(255, 102, 0, 0.6); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
-  .place-btn:hover .status-warning { color: rgba(255, 102, 0, 1); }
-
-  .test-tool { position: absolute; bottom: 20px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
-  .test-tool:hover { opacity: 1; }
-  .test-input { background: #111; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; font-family: inherit; width: 200px; cursor: text;}
-  .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
-  .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
+  .status-working, .status-warning { font-size: 11px; margin-top: 6px; letter-spacing: 1px; font-weight: normal; opacity: 0.6; }
+  .place-btn:hover .status-working, .place-btn:hover .status-warning { opacity: 1; }
 
   .theme-selector {
-    position: fixed;
-    top: 25px;
-    right: 25px;
-    z-index: 20;
-    display: flex;
-    gap: 8px;
-    background: rgba(0, 0, 0, 0.4);
-    padding: 8px;
-    border-radius: 12px;
-    border: 1px solid rgba(255,255,255,0.1);
+    position: fixed; top: 25px; right: 25px; z-index: 20; display: flex; gap: 8px;
+    background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 12px;
     backdrop-filter: blur(10px);
-    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
   }
   
   .theme-btn-sel {
-    background: transparent;
-    border: 1px solid rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.6);
-    padding: 8px 12px;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: bold;
-    cursor: crosshair;
-    border-radius: 6px;
-    transition: all 0.3s ease;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6);
+    padding: 8px 12px; font-family: sans-serif; font-size: 12px; font-weight: bold; cursor: pointer;
+    border-radius: 6px; transition: all 0.3s ease; text-transform: uppercase;
   }
-
-  .theme-btn-sel:hover {
-    color: #fff;
-    border-color: rgba(255,255,255,0.5);
-    background: rgba(255,255,255,0.05);
-  }
-
-  .theme-btn-sel.active {
-    background: var(--theme-color);
-    color: #000;
-    border-color: var(--theme-color);
-    box-shadow: 0 0 10px var(--theme-color);
-    text-shadow: none;
-  }
-
-  body.theme-terminal { --bg-color: #000500; }
-  body.theme-terminal .scanlines { opacity: 0.8; background-size: 100% 3px; }
-  body.theme-terminal .glass-panel { background: rgba(0, 15, 0, 0.4); border-color: rgba(0,255,0,0.2); }
-  
-  body.theme-synth { --bg-color: #0c0019; }
-  body.theme-synth .glass-panel { background: rgba(20, 0, 30, 0.3); }
-
-  body.theme-crimson { --bg-color: #0a0000; }
-  body.theme-crimson .scanlines { opacity: 0.6; }
-  body.theme-crimson .glass-panel { background: rgba(15, 0, 0, 0.4); }
+  .theme-btn-sel:hover { color: #fff; background: rgba(255,255,255,0.1); }
+  .theme-btn-sel.active { background: #fff; color: #000; }
 
 </style>
 </head>
@@ -302,26 +193,22 @@
 
   <canvas id="canvas-bg"></canvas>
   <div class="scanlines"></div>
+  <div class="css-background"></div>
 
   <div class="theme-selector">
     <button class="theme-btn-sel active" data-theme="default">NEON</button>
-    <button class="theme-btn-sel" data-theme="terminal">SYS</button>
-    <button class="theme-btn-sel" data-theme="synth">VCR</button>
-    <button class="theme-btn-sel" data-theme="crimson">VOID</button>
+    <button class="theme-btn-sel" data-theme="brutalism">BRUTAL</button>
+    <button class="theme-btn-sel" data-theme="matcha">MATCHA</button>
+    <button class="theme-btn-sel" data-theme="aero">AERO</button>
   </div>
 
   <div class="glass-panel" id="tilt-panel">
     <div class="title-wrapper">
       <h1 id="main-title">COMPILATION</h1>
       <div class="splash-quote" id="splash-text"></div>
-      <div class="top-warning">if you visit these sites without using compilation they wont work when you try again</div>
+      <div class="top-warning">if you visit these sites without using compilation they wont work</div>
     </div>
     <div class="grid-container" id="menu"></div>
-  </div>
-
-  <div class="test-tool">
-    <input type="text" id="testUrl" class="test-input" placeholder="URL to Hex">
-    <button onclick="testLink()" class="test-btn">ENCODE</button>
   </div>
 
   <script>
@@ -334,50 +221,25 @@
         btn.classList.add('active');
         currentTheme = btn.dataset.theme;
         document.body.className = `theme-${currentTheme}`;
-        initParticles();
+        
+        if (currentTheme === 'default') {
+            initParticles(); // Restart particles if switching back
+        }
       });
     });
 
-    const quotes = [
-      "100% legal",
-      "Also try Opera GX",
-      "Never leave your pie in for too long",
-      "Remember the good old days",
-      "RIP Sweet Tea",
-      "JC>CC",
-      "T-cubed",
-      "Takis! Takis! Takis!",
-      "does anyone even read these?",
-      "Lafayette B.",
-      "No Oil rigs here",
-      "say grenade 10 times fast",
-      "2-Crack, Plumbous, Rodrick, Slopadopalis",
-      "BLEHELEHEHHEEHH",
-      "Stay Strong Showtime Abdul Al Baker",
-      "Apple pie is good",
-      "time to get some stuff done",
-      "Travis or Youngboy?",
-      "This site has 1.3K views as of Feb 26",
-      "are you rushing or are you dragging?",
-      "Not quite my tempo...",
-      "That's my tempo..."
-    ];
+    const quotes = ["100% legal", "RIP Sweet Tea", "JC>CC", "T-cubed", "Lafayette B.", "BLEHELEHEHHEEHH"];
     document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
 
     const places = [
-      // The new Ultimate Stash button
-      // NOTE: Replace the hex below with the hex of your hosted scrubbed stash URL. 
-      // Right now, this hex stands for "https://your-stash-url.com"
-      { label: "ULTIMATE STASH", hex: "68747470733a2f2f796f75722d73746173682d75726c2e636f6d", colorClass: 'is-bright-green', isFavorite: true },
-      
-      { label: "PIE PLACE 01", hex: "68747470733a2f2f736f6469756d2d3568382e70616765732e646576", colorClass: 'is-cyan', warning: true },
-      { label: "PIE PLACE 02", hex: "68747470733a2f2f737a2d67616d65732e6769746875622e696f", colorClass: 'is-orange', isHot: true },
-      { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", colorClass: 'is-neon-red', warning: true, isNew: false },
-      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold', isFavorite: true },
-      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green', isClassic: true },
-      { label: "PIE PLACE 06", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f736177352e392e352f", colorClass: 'is-hot-pink', isCreator: true, isWiped: true },
-      { label: "PIE PLACE 07", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f756d6272656c6c612f", colorClass: 'is-electric-blue', isNew: true },
-      { label: "PIE PLACE 08", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f636f696c2f", colorClass: 'is-magenta', isNew: true }
+      { label: "PIE PLACE 01", hex: "68747470733a2f2f736f6469756d2d3568382e70616765732e646576", warning: true },
+      { label: "PIE PLACE 02", hex: "68747470733a2f2f737a2d67616d65732e6769746875622e696f", isHot: true },
+      { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", warning: true },
+      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", isFavorite: true },
+      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", isClassic: true },
+      { label: "PIE PLACE 06", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f736177352e392e352f", isWiped: true },
+      { label: "PIE PLACE 07", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f756d6272656c6c612f", isNew: true },
+      { label: "PIE PLACE 08", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f636f696c2f", isNew: true }
     ];
 
     const menu = document.getElementById('menu');
@@ -386,37 +248,17 @@
     places.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'place-btn';
-      if (p.colorClass) btn.classList.add(p.colorClass);
 
       let topLabel = '';
-      let bottomLabel = '';
+      if (p.isWiped) topLabel = `<span class="mini-label" style="color: inherit;">► BOARDS WIPED ◄</span>`;
+      else if (p.isNew) topLabel = `<span class="mini-label" style="color: inherit;">► NEW! ◄</span>`;
+      else if (p.isFavorite) topLabel = `<span class="mini-label" style="color: inherit;">★ FAVORITE ★</span>`;
+      else if (p.isHot) topLabel = `<span class="mini-label" style="color: inherit;">🔥 HOT! 🔥</span>`;
+      else if (p.isClassic) topLabel = `<span class="mini-label" style="color: inherit;">⚙️ CLASSIC ⚙️</span>`;
+      
+      let statusHtml = p.warning ? `<span class="status-warning">sometimes doesn't work</span>` : `<span class="status-working">working</span>`;
 
-      if (p.isWiped) {
-        btn.classList.add('is-new');
-        topLabel = `<span class="mini-label" style="color: var(--hot-pink);">► BOARDS WIPED ◄</span>`;
-      } else if (p.isNew) {
-        topLabel = `<span class="mini-label" style="color: var(--lime);">► NEW! ◄</span>`;
-      }
-      
-      if (!topLabel) {
-        if (p.isFavorite) {
-           topLabel = `<span class="mini-label" style="color: var(--gold);">★ FAVORITE ★</span>`;
-        } else if (p.isHot) {
-           topLabel = `<span class="mini-label" style="color: var(--orange);">🔥 HOT! 🔥</span>`;
-        } else if (p.isClassic) {
-           topLabel = `<span class="mini-label" style="color: var(--cyan);">⚙️ CLASSIC ⚙️</span>`;
-        }
-      }
-      
-      if (p.isCreator) {
-        bottomLabel = `<div style="font-size: 10px; color: var(--hot-pink); margin-top: 4px; letter-spacing: 1px;">MADE BY MEOWMASTER</div>`;
-      }
-      
-      let statusHtml = p.warning 
-        ? `<span class="status-warning">sometimes doesn't work</span>`
-        : `<span class="status-working">working</span>`;
-
-      btn.innerHTML = `${topLabel}<span>${p.label}</span>${bottomLabel}${statusHtml}`;
+      btn.innerHTML = `${topLabel}<span>${p.label}</span>${statusHtml}`;
       btn.onclick = () => initSession(p.hex);
       menu.appendChild(btn);
     });
@@ -427,424 +269,95 @@
       panel.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
     });
     
-    document.addEventListener('mouseleave', () => {
-      panel.style.transform = `rotateY(0deg) rotateX(0deg)`;
-    });
+    document.addEventListener('mouseleave', () => { panel.style.transform = `rotateY(0deg) rotateX(0deg)`; });
 
     function initSession(h) {
       let u = '';
       for (let i = 0; i < h.length; i += 2) u += String.fromCharCode(parseInt(h.substr(i, 2), 16));
-      launch(u);
-    }
-
-    function testLink() {
-      const url = document.getElementById('testUrl').value;
-      if(!url) return;
-      let hex = '';
-      for(let i=0;i<url.length;i++) hex += url.charCodeAt(i).toString(16);
-      launch(url);
-    }
-
-    function launch(url) {
-      const id = Math.floor(Math.random() * 100000);
-      const sep = url.includes('?') ? '&' : '?';
-      const target = `${url}${sep}session=${id}`;
-
-      const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
-
-      const greetings = ["good luck", "have fun", "Goodbye", "See ya"];
-      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
-
+      const target = `${u}?session=${Math.floor(Math.random() * 100000)}`;
+      
       const w = window.open('about:blank', '_blank');
       if (w) {
-        w.document.write(`
-          <style>
-            html, body { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh; color: #fff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-            .msg { font-size: 36px; font-weight: bold; z-index: 10; animation: float 2s infinite alternate ease-in-out; text-align: center; transition: opacity 0.5s ease; text-shadow: 0 0 15px ${currentColor}, 0 0 30px ${currentColor}; pointer-events: none; }
-            .sub { font-size: 18px; color: rgba(255,255,255,0.8); margin-top: 15px; text-shadow: none; pointer-events: none; }
-            @keyframes float { 0% { transform: translateY(-5px); } 100% { transform: translateY(5px); } }
-            iframe { display: block; width: 100vw; height: 100vh; border: none; margin: 0; padding: 0; position: absolute; top: 0; left: 0; z-index: 3; background: #000; opacity: 0; transform: scale(0.01); transition: transform 0.65s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.3s ease-out; }
-            canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; transition: opacity 1.5s ease-in-out; }
-          </style>
-          <canvas id="warpCanvas"></canvas>
-          <iframe id="frm" src="${target}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"></iframe>
-          <div class="msg" id="ldr">${randomGreeting}<div class="sub">-Meowmaster</div></div>
-          <script>
-            const wc = document.getElementById('warpCanvas');
-            const wctx = wc.getContext('2d');
-            let stars = [];
-            wc.width = window.innerWidth; wc.height = window.innerHeight;
-            for(let i=0; i<600; i++) { stars.push({ x: Math.random()*wc.width-wc.width/2, y: Math.random()*wc.height-wc.height/2, z: Math.random()*wc.width, pz: Math.random()*wc.width }); }
-            let speed = 0.5; let animationFrameId; let isTransitioning = false;
-            function animateWarp() {
-              speed += 0.2 + (speed * 0.025); 
-              if (speed > 130 && !isTransitioning) {
-                isTransitioning = true;
-                document.getElementById('ldr').style.opacity = '0';
-                const frame = document.getElementById('frm');
-                frame.style.opacity = '1'; frame.style.transform = 'scale(1)';
-                setTimeout(() => { wc.style.opacity = '0'; }, 800);
-                setTimeout(() => { cancelAnimationFrame(animationFrameId); }, 2500);
-              }
-              wctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; wctx.fillRect(0,0,wc.width,wc.height);
-              let cx = wc.width/2; let cy = wc.height/2;
-              for(let i=0; i<stars.length; i++) {
-                stars[i].pz = stars[i].z; stars[i].z -= speed;
-                if(stars[i].z <= 1) { stars[i].z = wc.width; stars[i].pz = wc.width; stars[i].x = Math.random()*wc.width-wc.width/2; stars[i].y = Math.random()*wc.height-wc.height/2; }
-                let sx = (stars[i].x / stars[i].z) * wc.width + cx; let sy = (stars[i].y / stars[i].z) * wc.width + cy;
-                let px = (stars[i].x / stars[i].pz) * wc.width + cx; let py = (stars[i].y / stars[i].pz) * wc.width + cy;
-                wctx.beginPath(); wctx.moveTo(px, py); wctx.lineTo(sx, sy);
-                wctx.lineWidth = Math.max(0.5, (1 - stars[i].z/wc.width) * 4);
-                wctx.strokeStyle = (i % 4 === 0) ? '${currentColor}' : '#ffffff'; 
-                wctx.stroke();
-              }
-              if (!isTransitioning || wc.style.opacity !== '0') animationFrameId = requestAnimationFrame(animateWarp);
-            }
-            animateWarp();
-          <\/script>
-        `);
+        w.document.write(`<style>body{margin:0;padding:0;background:#000;}</style><iframe src="${target}" style="width:100vw;height:100vh;border:none;"></iframe>`);
         w.document.close();
       }
     }
 
+    // --- PARTICLE SYSTEM ENGINE (Only active on Default Theme) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
-    let ripplesArray = []; 
-    
     let globalHue = 180; 
-    
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
-
-    let mouse = { x: null, y: null };
-    let isLeftMouseDown = false;
-    let isRightMouseDown = false;
-    let isTimeFrozen = false; 
-    let isOvercharged = false; 
-
-    window.addEventListener('mousemove', function(e) { mouse.x = e.x; mouse.y = e.y; });
-    window.addEventListener('mouseout', function() { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false;});
-    
-    window.addEventListener('mousedown', (e) => { 
-      if (e.button === 0) isLeftMouseDown = true; 
-      if (e.button === 2) isRightMouseDown = true;
-    });
-    window.addEventListener('contextmenu', e => e.preventDefault());
-
-    window.addEventListener('keydown', (e) => { 
-      if (e.code === 'Space') isTimeFrozen = true; 
-      if (e.key === 'Shift') isOvercharged = true; 
-    });
-    window.addEventListener('keyup', (e) => { 
-      if (e.code === 'Space') isTimeFrozen = false; 
-      if (e.key === 'Shift') isOvercharged = false; 
-    });
-
-    document.getElementById('main-title').addEventListener('dblclick', (e) => {
-      isOvercharged = true;
-      setTimeout(() => isOvercharged = false, 1500);
-      for(let i=0; i<15; i++) {
-        setTimeout(() => {
-          let c = currentTheme === 'terminal' ? '#00ff00' : (currentTheme === 'crimson' ? '#ff0000' : '#ff00aa');
-          ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, c));
-        }, i * 100);
-      }
-    });
-
-    window.addEventListener('mouseup', (e) => { 
-      if (e.button === 0) {
-        isLeftMouseDown = false; 
-        if (mouse.x === undefined || mouse.y === undefined) return;
-        
-        let rippleColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, rippleColor)); 
-
-        for (let i = 0; i < particlesArray.length; i++) {
-          let dx = particlesArray[i].x - mouse.x;
-          let dy = particlesArray[i].y - mouse.y;
-          let distance = Math.sqrt(dx*dx + dy*dy);
-          if (distance < 400) { 
-            let force = (400 - distance) / 6; 
-            let dirX = dx / distance;
-            let dirY = dy / distance;
-            particlesArray[i].vx += dirX * force;
-            particlesArray[i].vy += dirY * force;
-          }
-        }
-      }
-      if (e.button === 2) {
-        isRightMouseDown = false;
-        let c = currentTheme === 'terminal' ? '#00ff00' : (currentTheme === 'crimson' ? '#ff0000' : '#ff00aa');
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, c)); 
-      }
-    });
-
-    class Ripple {
-      constructor(x, y, isMega = false, colorStr) {
-        this.x = x; this.y = y; 
-        this.radius = 10; 
-        this.alpha = 1; 
-        this.colorStr = colorStr;
-        this.lineWidth = isMega ? 20 : 8;
-        this.expansionRate = isMega ? 30 : 15;
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        
-        if(this.colorStr.startsWith('#')) {
-            ctx.strokeStyle = this.colorStr;
-            ctx.globalAlpha = this.alpha;
-        } else {
-            let hslMatch = this.colorStr.match(/\d+/g);
-            if(hslMatch && hslMatch.length >= 3) {
-               ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`;
-            } else {
-               ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; 
-            }
-        }
-        
-        ctx.lineWidth = this.lineWidth;
-        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : 30; // Disabled shadows for terminal
-        ctx.shadowColor = this.colorStr;
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-        ctx.globalAlpha = 1; 
-      }
-      update() {
-        let timeScale = isTimeFrozen ? 0.1 : 1;
-        this.radius += this.expansionRate * timeScale; 
-        this.alpha -= (0.1 * timeScale); 
-        this.lineWidth *= (1 - (0.08 * timeScale)); 
-      }
-    }
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
     class Particle {
       constructor(x, y, vx, vy, size) {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy;
-        this.baseVx = vx; this.baseVy = vy;
-        this.size = size; 
-        this.hueOffset = (Math.random() * 40) - 20; 
+        this.size = size; this.hueOffset = (Math.random() * 40) - 20; 
       }
       draw() {
         ctx.beginPath();
-        let fillStyle;
-        
-        if (currentTheme === 'terminal') {
-          fillStyle = isOvercharged ? '#ffffff' : '#00ff00';
-          ctx.rect(this.x - this.size, this.y - this.size, this.size * 2.5, this.size * 2.5);
-        } else if (currentTheme === 'synth') {
-          fillStyle = isOvercharged ? '#ffffff' : (this.hueOffset > 0 ? '#ff00aa' : '#00ffff');
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-        } else if (currentTheme === 'crimson') {
-          fillStyle = isOvercharged ? '#ff0000' : '#ff073a';
-          ctx.arc(this.x, this.y, this.size * (Math.random() * 0.5 + 0.8), 0, Math.PI * 2, false);
-        } else {
-          let myHue = globalHue + this.hueOffset;
-          fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-        }
-
-        ctx.fillStyle = fillStyle;
-        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : (isOvercharged ? 25 : 15); // Disabled shadows for terminal
-        ctx.shadowColor = fillStyle;
-        ctx.fill();
-        ctx.shadowBlur = 0; 
+        let myHue = globalHue + this.hueOffset;
+        ctx.fillStyle = `hsl(${myHue}, 100%, 50%)`;
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        ctx.shadowBlur = 15; ctx.shadowColor = ctx.fillStyle; ctx.fill(); ctx.shadowBlur = 0; 
       }
       update() {
-        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
-          this.vx = -this.vx; this.baseVx = -this.baseVx;
-          if(this.x < 0) this.x = this.size; else this.x = canvas.width - this.size;
-        }
-        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
-          this.vy = -this.vy; this.baseVy = -this.baseVy;
-          if(this.y < 0) this.y = this.size; else this.y = canvas.height - this.size;
-        }
-
-        if (isOvercharged) {
-          this.vx += (Math.random() - 0.5) * (currentTheme === 'crimson' ? 8 : 5);
-          this.vy += (Math.random() - 0.5) * (currentTheme === 'crimson' ? 8 : 5);
-        }
-
-        if(mouse.x != undefined && mouse.y != undefined) {
-          let dx = mouse.x - this.x;
-          let dy = mouse.y - this.y;
-          let distance = Math.sqrt(dx*dx + dy*dy);
-          
-          if (distance < 600) {
-            let dirX = dx / distance;
-            let dirY = dy / distance;
-            let force = (600 - distance) / 600; 
-
-            if (isLeftMouseDown) {
-              this.vx += dirX * force * 6;
-              this.vy += dirY * force * 6;
-              this.vx += dirY * force * 2.5;
-              this.vy -= dirX * force * 2.5;
-              
-              if (distance < 50) {
-                this.vx *= 0.2; 
-                this.vy *= 0.2; 
-                this.x += (mouse.x - this.x) * 0.15; 
-                this.y += (mouse.y - this.y) * 0.15; 
-              }
-            } else if (isRightMouseDown) {
-              this.vx -= dirX * force * 4;
-              this.vy -= dirY * force * 4;
-            } else if (distance < 120 && !isOvercharged) {
-              let hoverForce = (120 - distance) / 120;
-              this.vx -= dirX * hoverForce * 0.5;
-              this.vy -= dirY * hoverForce * 0.5;
-            }
-          }
-        }
-
-        let currentSpeedSq = this.vx * this.vx + this.vy * this.vy;
-        let baseSpeedSq = this.baseVx * this.baseVx + this.baseVy * this.baseVy;
-
-        if (currentSpeedSq > baseSpeedSq * 2 && !isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
-          this.vx *= 0.93; 
-          this.vy *= 0.93;
-        } else if (!isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
-          this.vx += (this.baseVx - this.vx) * 0.02;
-          this.vy += (this.baseVy - this.vy) * 0.02;
-        }
-
-        let timeScale = isTimeFrozen ? 0.05 : 1;
-        this.x += this.vx * timeScale; 
-        this.y += this.vy * timeScale;
-        
+        if (this.x + this.size > canvas.width || this.x - this.size < 0) this.vx = -this.vx;
+        if (this.y + this.size > canvas.height || this.y - this.size < 0) this.vy = -this.vy;
+        this.x += this.vx; this.y += this.vy;
         this.draw();
       }
     }
 
     function initParticles() {
       particlesArray = [];
-      // Drastically lower particle count for the terminal theme to improve performance
       let numberOfParticles = (canvas.height * canvas.width) / 8000; 
-      if (currentTheme === 'terminal') numberOfParticles = (canvas.height * canvas.width) / 25000; 
-      
       for (let i = 0; i < numberOfParticles; i++) {
         let size = (Math.random() * 3) + 2; 
-        let x = Math.random() * (innerWidth - size * 2) + size;
-        let y = Math.random() * (innerHeight - size * 2) + size;
-        let vx = (Math.random() * 2) - 1; 
-        let vy = (Math.random() * 2) - 1;
-        particlesArray.push(new Particle(x, y, vx, vy, size));
+        particlesArray.push(new Particle(
+          Math.random() * (innerWidth - size * 2) + size, 
+          Math.random() * (innerHeight - size * 2) + size, 
+          (Math.random() * 2) - 1, (Math.random() * 2) - 1, size
+        ));
       }
     }
 
     function connectParticles() {
       for (let a = 0; a < particlesArray.length; a++) {
         for (let b = a; b < particlesArray.length; b++) {
-          let dx = particlesArray[a].x - particlesArray[b].x;
-          let dy = particlesArray[a].y - particlesArray[b].y;
-          let distance = dx*dx + dy*dy;
-          
-          let connectionLimit = isOvercharged ? 25000 : 15000;
-          
-          if (distance < connectionLimit) {
-            let opacityValue = 1 - (distance / connectionLimit);
-            
-            if (currentTheme === 'terminal') {
-                ctx.strokeStyle = `rgba(0, 255, 0, ${opacityValue * (isOvercharged ? 1 : 0.5)})`;
-            } else if (currentTheme === 'synth') {
-                let isPink = particlesArray[a].hueOffset > 0;
-                ctx.strokeStyle = isPink 
-                    ? `rgba(255, 0, 170, ${opacityValue * 0.6})` 
-                    : `rgba(0, 255, 255, ${opacityValue * 0.6})`;
-            } else if (currentTheme === 'crimson') {
-                ctx.strokeStyle = `rgba(255, 7, 58, ${opacityValue * 0.7})`;
-            } else {
-                let baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
-                let sat = isTimeFrozen ? "100%" : "100%";
-                let light = isTimeFrozen ? "50%" : "60%";
-                ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
-            }
-            
-            ctx.lineWidth = isTimeFrozen ? 3 : (isOvercharged ? 2.5 : 2); 
-            ctx.beginPath();
+          let distance = (particlesArray[a].x - particlesArray[b].x)**2 + (particlesArray[a].y - particlesArray[b].y)**2;
+          if (distance < 15000) {
+            ctx.strokeStyle = `hsla(${globalHue}, 100%, 60%, ${1 - (distance / 15000)})`; 
+            ctx.lineWidth = 2; ctx.beginPath();
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-            ctx.stroke();
+            ctx.lineTo(particlesArray[b].x, particlesArray[b].y); ctx.stroke();
           }
         }
-      }
-    }
-
-    function drawVortexCore() {
-      if ((isLeftMouseDown || isRightMouseDown) && mouse.x != undefined) {
-        ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = (currentTheme === 'terminal') ? 0 : 40; // Disabled shadows for terminal
-        
-        let c = `hsl(${globalHue}, 100%, 50%)`;
-        if (currentTheme === 'terminal') c = '#00ff00';
-        if (currentTheme === 'synth') c = '#ff00aa';
-        if (currentTheme === 'crimson') c = '#ff0000';
-        
-        ctx.shadowColor = isRightMouseDown ? (currentTheme === 'synth' ? '#00ffff' : '#ffffff') : c;
-        ctx.fill();
-        ctx.shadowBlur = 0;
       }
     }
 
     function animateParticles() {
       requestAnimationFrame(animateParticles);
       
-      if (currentTheme === 'default') {
-        globalHue += 0.15;
-        if (globalHue >= 360) globalHue = 0;
-        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
-      } else if (currentTheme === 'terminal') {
-        document.documentElement.style.setProperty('--theme-color', '#00ff00');
-      } else if (currentTheme === 'synth') {
-        document.documentElement.style.setProperty('--theme-color', '#ff00aa');
-      } else if (currentTheme === 'crimson') {
-        document.documentElement.style.setProperty('--theme-color', '#ff073a');
+      if (currentTheme !== 'default') {
+          // Skip drawing particles to save CPU on non-neon themes
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          return;
       }
+
+      globalHue += 0.15;
+      if (globalHue >= 360) globalHue = 0;
+      document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
       
-      if (isTimeFrozen || isOvercharged) {
-        let overchargeColor = 'rgba(20, 0, 10, 0.25)';
-        let freezeColor = 'rgba(5, 1, 10, 0.15)';
-        
-        if (currentTheme === 'terminal') {
-            overchargeColor = 'rgba(0, 20, 0, 0.25)';
-            freezeColor = 'rgba(0, 5, 0, 0.2)';
-        } else if (currentTheme === 'synth') {
-            overchargeColor = 'rgba(30, 0, 30, 0.3)';
-            freezeColor = 'rgba(10, 0, 20, 0.15)';
-        } else if (currentTheme === 'crimson') {
-            overchargeColor = 'rgba(40, 0, 0, 0.3)';
-            freezeColor = 'rgba(15, 0, 0, 0.15)';
-        }
+      ctx.fillStyle = 'rgba(5, 1, 10, 0.15)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        ctx.fillStyle = isOvercharged ? overchargeColor : freezeColor;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
-
-      for (let i = ripplesArray.length - 1; i >= 0; i--) {
-        ripplesArray[i].update(); ripplesArray[i].draw();
-        if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1);
-      }
-
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update();
-      }
-      
+      for (let i = 0; i < particlesArray.length; i++) particlesArray[i].update();
       connectParticles();
-      drawVortexCore();
     }
 
-    window.addEventListener('resize', function() {
-      canvas.width = innerWidth; canvas.height = innerHeight;
-      initParticles();
-    });
-
+    window.addEventListener('resize', () => { canvas.width = innerWidth; canvas.height = innerHeight; if(currentTheme==='default') initParticles(); });
     initParticles(); animateParticles();
   </script>
 </body>
