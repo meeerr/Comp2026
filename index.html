@@ -6,18 +6,19 @@
 <title>COMPILATION</title>
 <style>
   :root {
-    --theme-color: #00ffff;
-    --cyan: #00e5ff;
-    --lime: #39ff14;
-    --gold: #ffd700;
-    --orange: #ff6600;
-    --hot-pink: #ff00aa;
-    --electric-blue: #007fff;
-    --magenta: #ff00ff;
-    --bright-green: #32cd32;
-    --neon-red: #ff073a;
-    --forest-green: #228b22;
-    --purple-haze: #7f00ff;
+    --theme-color: #00ffff; 
+    --cyan: #00e5ff;         
+    --lime: #39ff14;         
+    --gold: #ffd700;         
+    --orange: #ff6600;       
+    --hot-pink: #ff00aa;     
+    --electric-blue: #007fff; 
+    --magenta: #ff00ff;      
+    --bright-green: #32cd32; 
+    --neon-red: #ff073a;     
+    --forest-green: #228b22; 
+    --purple-haze: #7f00ff;  
+    --bg-color: #05010a; /* Dynamic background variable */
   }
 
   body {
@@ -30,12 +31,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #05010a;
+    background-color: var(--bg-color);
     overflow: hidden;
     color: white;
     perspective: 1200px;
     cursor: crosshair;
     user-select: none;
+    transition: background-color 0.5s ease;
   }
 
   body:active {
@@ -58,6 +60,7 @@
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 1;
+    transition: opacity 0.5s ease;
   }
 
   @keyframes panelGlow {
@@ -79,7 +82,7 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: transform 0.1s ease-out, box-shadow 0.2s ease;
+    transition: transform 0.1s ease-out, box-shadow 0.2s ease, background 0.5s ease;
     transform-style: preserve-3d;
     animation: panelGlow 3s infinite alternate ease-in-out;
   }
@@ -207,7 +210,6 @@
   .place-btn.is-electric-blue { border-color: var(--electric-blue); }
   .place-btn.is-magenta { border-color: var(--magenta); }
   .place-btn.is-forest-green { border-color: var(--forest-green); }
-  .place-btn.is-purple-haze { border-color: var(--purple-haze); }
 
   .place-btn.is-cyan:hover { box-shadow: 0 0 15px 5px rgba(0, 229, 255, 0.7); }
   .place-btn.is-orange:hover { box-shadow: 0 0 15px 5px rgba(255, 102, 0, 0.7); }
@@ -218,7 +220,6 @@
   .place-btn.is-electric-blue:hover { box-shadow: 0 0 15px 5px rgba(0, 127, 255, 0.7); }
   .place-btn.is-magenta:hover { box-shadow: 0 0 15px 5px rgba(255, 0, 255, 0.7); }
   .place-btn.is-forest-green:hover { box-shadow: 0 0 15px 5px rgba(34, 139, 34, 0.7); }
-  .place-btn.is-purple-haze:hover { box-shadow: 0 0 15px 5px rgba(127, 0, 255, 0.7); }
 
   .mini-label {
     font-size: 11px;
@@ -227,23 +228,11 @@
     text-shadow: 0 0 8px currentColor;
     animation: pulseBadge 1.5s infinite alternate ease-in-out;
   }
+  @keyframes pulseBadge { 0% { opacity: 0.7; } 100% { opacity: 1; } }
 
-  .status-working {
-    font-size: 11px;
-    color: rgba(255, 255, 255, 0.4);
-    margin-top: 6px;
-    letter-spacing: 1px;
-    font-weight: normal;
-  }
+  .status-working { font-size: 11px; color: rgba(255, 255, 255, 0.4); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
   .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.9); }
-
-  .status-warning {
-    font-size: 11px;
-    color: rgba(255, 102, 0, 0.6);
-    margin-top: 6px;
-    letter-spacing: 1px;
-    font-weight: normal;
-  }
+  .status-warning { font-size: 11px; color: rgba(255, 102, 0, 0.6); margin-top: 6px; letter-spacing: 1px; font-weight: normal; }
   .place-btn:hover .status-warning { color: rgba(255, 102, 0, 1); }
 
   .test-tool { position: absolute; bottom: 20px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
@@ -252,68 +241,76 @@
   .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
   .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
 
-  /* --- NEW: Theme Selector Panel --- */
+  /* --- NEW: THEME SELECTOR UI --- */
   .theme-selector {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    z-index: 10;
+    position: fixed;
+    top: 25px;
+    right: 25px;
+    z-index: 20;
     display: flex;
-    flex-direction: column;
     gap: 8px;
-    background: rgba(5, 2, 10, 0.5);
-    padding: 15px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    backdrop-filter: blur(8px);
-    transition: box-shadow 0.3s ease;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px;
+    border-radius: 12px;
+    border: 1px solid rgba(255,255,255,0.1);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 5px 20px rgba(0,0,0,0.5);
   }
-  .theme-selector:hover {
-    box-shadow: 0 0 15px var(--theme-color);
-  }
-  .theme-title {
-    font-size: 10px;
-    color: var(--cyan);
-    letter-spacing: 2px;
-    margin-bottom: 5px;
-    text-align: center;
-    text-shadow: 0 0 5px var(--cyan);
-  }
-  .theme-btn {
-    background: #111;
-    border: 1px solid #444;
-    color: #fff;
-    padding: 6px 12px;
-    cursor: crosshair;
+  
+  .theme-btn-sel {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+    padding: 8px 12px;
     font-family: inherit;
-    font-size: 11px;
-    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    cursor: crosshair;
+    border-radius: 6px;
     transition: all 0.3s ease;
     text-transform: uppercase;
     letter-spacing: 1px;
   }
-  .theme-btn:hover, .theme-btn.active {
+
+  .theme-btn-sel:hover {
+    color: #fff;
+    border-color: rgba(255,255,255,0.5);
+    background: rgba(255,255,255,0.05);
+  }
+
+  .theme-btn-sel.active {
     background: var(--theme-color);
     color: #000;
     border-color: var(--theme-color);
     box-shadow: 0 0 10px var(--theme-color);
-    font-weight: bold;
+    text-shadow: none;
   }
+
+  /* Theme Specific Global Overrides */
+  body.theme-terminal { --bg-color: #000500; }
+  body.theme-terminal .scanlines { opacity: 0.8; background-size: 100% 3px; }
+  body.theme-terminal .glass-panel { background: rgba(0, 15, 0, 0.4); border-color: rgba(0,255,0,0.2); }
+  
+  body.theme-synth { --bg-color: #0c0019; }
+  body.theme-synth .glass-panel { background: rgba(20, 0, 30, 0.3); }
+
+  body.theme-crimson { --bg-color: #0a0000; }
+  body.theme-crimson .scanlines { opacity: 0.6; }
+  body.theme-crimson .glass-panel { background: rgba(15, 0, 0, 0.4); }
 
 </style>
 </head>
-<body>
+<body class="theme-default">
 
   <canvas id="canvas-bg"></canvas>
   <div class="scanlines"></div>
 
   <!-- THEME SELECTOR -->
   <div class="theme-selector">
-    <div class="theme-title">SYS.THEME</div>
-    <button class="theme-btn active" onclick="setTheme('rainbow', this)">Spectrum</button>
-    <button class="theme-btn" onclick="setTheme('matrix', this)">Terminal</button>
-    <button class="theme-btn" onclick="setTheme('blood', this)">Crimson</button>
-    <button class="theme-btn" onclick="setTheme('cyber', this)">Night City</button>
+    <button class="theme-btn-sel active" data-theme="default">NEON</button>
+    <button class="theme-btn-sel" data-theme="terminal">SYS</button>
+    <button class="theme-btn-sel" data-theme="synth">VCR</button>
+    <button class="theme-btn-sel" data-theme="crimson">VOID</button>
   </div>
 
   <div class="glass-panel" id="tilt-panel">
@@ -328,26 +325,24 @@
   <div class="test-tool">
     <input type="text" id="testUrl" class="test-input" placeholder="URL to Hex">
     <button onclick="testLink()" class="test-btn">ENCODE</button>
-    <!-- THE STASH -->
-    <a href="stash.pdf" download class="test-btn" style="text-decoration: none; display: flex; align-items: center; justify-content: center;">THE STASH</a>
   </div>
 
   <script>
-    // --- THEME ENGINE ---
-    let currentThemeMode = 'rainbow';
+    // --- THEME LOGIC ---
+    let currentTheme = 'default';
+    const themeButtons = document.querySelectorAll('.theme-btn-sel');
     
-    function setTheme(mode, btn) {
-      currentThemeMode = mode;
-      
-      // Update active button state
-      document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
-      if(btn) btn.classList.add('active');
-
-      // Instantly shift hue based on selection
-      if (mode === 'matrix') globalHue = 120; // Green
-      if (mode === 'blood') globalHue = 0;   // Red
-      if (mode === 'cyber') globalHue = 280; // Purple/Pink start
-    }
+    themeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        themeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentTheme = btn.dataset.theme;
+        document.body.className = `theme-${currentTheme}`;
+        
+        // Force instant particle reset on theme change for clean transition
+        initParticles();
+      });
+    });
 
     const quotes = [
       "100% legal",
@@ -378,15 +373,12 @@
     const places = [
       { label: "PIE PLACE 01", hex: "68747470733a2f2f736f6469756d2d3568382e70616765732e646576", colorClass: 'is-cyan', warning: true },
       { label: "PIE PLACE 02", hex: "68747470733a2f2f737a2d67616d65732e6769746875622e696f", colorClass: 'is-orange', isHot: true },
-      { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", colorClass: 'is-neon-red', warning: true, isNew: false }, 
-      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold', isFavorite: true }, 
-      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green', isClassic: true }, 
-      { label: "PIE PLACE 06", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f736177352e392e352f", colorClass: 'is-hot-pink', isCreator: true, isWiped: true }, 
-      { label: "PIE PLACE 07", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f756d6272656c6c612f", colorClass: 'is-electric-blue', isNew: true }, 
-      { label: "PIE PLACE 08", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f636f696c2f", colorClass: 'is-magenta', isNew: true },
-      // Obfuscated additions requested
-      { label: "PIE PLACE 09", hex: "68747470733a2f2f756e626c6f636b65642d67616d65732e73332e616d617a6f6e6177732e636f6d2f696e6465782e68746d6c", colorClass: 'is-purple-haze', isNew: true },
-      { label: "PIE PLACE 10", hex: "68747470733a2f2f6365726f70616e616d612e636f6d2f6d61696e2e68746d6c3f7372736c7469643d41666d424f6f715a4c6d70614348374e535a646a496376787a3345336545337450486f703446706b534163794367344b304c6356616f625f", colorClass: 'is-cyan', isNew: true }
+      { label: "PIE PLACE 03", hex: "68747470733a2f2f73796e61707365636f72702e70616765732e6465762f", colorClass: 'is-neon-red', warning: true, isNew: false },
+      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold', isFavorite: true },
+      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green', isClassic: true },
+      { label: "PIE PLACE 06", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f736177352e392e352f", colorClass: 'is-hot-pink', isCreator: true, isWiped: true },
+      { label: "PIE PLACE 07", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f756d6272656c6c612f", colorClass: 'is-electric-blue', isNew: true },
+      { label: "PIE PLACE 08", hex: "68747470733a2f2f676c6572623632372e6769746875622e696f2f636f696c2f", colorClass: 'is-magenta', isNew: true }
     ];
 
     const menu = document.getElementById('menu');
@@ -395,22 +387,19 @@
     places.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'place-btn';
-      
-      if (p.colorClass) {
-        btn.classList.add(p.colorClass);
-      }
+      if (p.colorClass) btn.classList.add(p.colorClass);
 
       let topLabel = '';
       let bottomLabel = '';
 
       if (p.isWiped) {
-        btn.classList.add('is-new'); 
+        btn.classList.add('is-new');
         topLabel = `<span class="mini-label" style="color: var(--hot-pink);">► BOARDS WIPED ◄</span>`;
       } else if (p.isNew) {
         topLabel = `<span class="mini-label" style="color: var(--lime);">► NEW! ◄</span>`;
       }
       
-      if (!topLabel) { 
+      if (!topLabel) {
         if (p.isFavorite) {
            topLabel = `<span class="mini-label" style="color: var(--gold);">★ FAVORITE ★</span>`;
         } else if (p.isHot) {
@@ -472,94 +461,45 @@
         w.document.write(`
           <style>
             html, body { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh; color: #fff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-            
             .msg { font-size: 36px; font-weight: bold; z-index: 10; animation: float 2s infinite alternate ease-in-out; text-align: center; transition: opacity 0.5s ease; text-shadow: 0 0 15px ${currentColor}, 0 0 30px ${currentColor}; pointer-events: none; }
             .sub { font-size: 18px; color: rgba(255,255,255,0.8); margin-top: 15px; text-shadow: none; pointer-events: none; }
             @keyframes float { 0% { transform: translateY(-5px); } 100% { transform: translateY(5px); } }
-            
-            iframe { 
-              display: block; width: 100vw; height: 100vh; border: none; margin: 0; padding: 0; position: absolute; top: 0; left: 0; 
-              z-index: 3; 
-              background: #000; 
-              opacity: 0; 
-              transform: scale(0.01); 
-              transition: transform 0.65s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.3s ease-out; 
-            }
+            iframe { display: block; width: 100vw; height: 100vh; border: none; margin: 0; padding: 0; position: absolute; top: 0; left: 0; z-index: 3; background: #000; opacity: 0; transform: scale(0.01); transition: transform 0.65s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.3s ease-out; }
             canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; transition: opacity 1.5s ease-in-out; }
           </style>
-          
           <canvas id="warpCanvas"></canvas>
           <iframe id="frm" src="${target}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"></iframe>
           <div class="msg" id="ldr">${randomGreeting}<div class="sub">-Meowmaster</div></div>
-          
           <script>
             const wc = document.getElementById('warpCanvas');
             const wctx = wc.getContext('2d');
             let stars = [];
             wc.width = window.innerWidth; wc.height = window.innerHeight;
-            
-            for(let i=0; i<600; i++) {
-              stars.push({
-                x: Math.random()*wc.width-wc.width/2, 
-                y: Math.random()*wc.height-wc.height/2, 
-                z: Math.random()*wc.width,
-                pz: Math.random()*wc.width 
-              });
-            }
-            
-            let speed = 0.5;
-            let animationFrameId;
-            let isTransitioning = false;
-
+            for(let i=0; i<600; i++) { stars.push({ x: Math.random()*wc.width-wc.width/2, y: Math.random()*wc.height-wc.height/2, z: Math.random()*wc.width, pz: Math.random()*wc.width }); }
+            let speed = 0.5; let animationFrameId; let isTransitioning = false;
             function animateWarp() {
               speed += 0.2 + (speed * 0.025); 
-              
               if (speed > 130 && !isTransitioning) {
                 isTransitioning = true;
-                
                 document.getElementById('ldr').style.opacity = '0';
-                
                 const frame = document.getElementById('frm');
-                frame.style.opacity = '1';
-                frame.style.transform = 'scale(1)';
-                
+                frame.style.opacity = '1'; frame.style.transform = 'scale(1)';
                 setTimeout(() => { wc.style.opacity = '0'; }, 800);
                 setTimeout(() => { cancelAnimationFrame(animationFrameId); }, 2500);
               }
-
-              wctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-              wctx.fillRect(0,0,wc.width,wc.height);
-              
+              wctx.fillStyle = 'rgba(0, 0, 0, 0.4)'; wctx.fillRect(0,0,wc.width,wc.height);
               let cx = wc.width/2; let cy = wc.height/2;
-              
               for(let i=0; i<stars.length; i++) {
-                stars[i].pz = stars[i].z; 
-                stars[i].z -= speed;
-                
-                if(stars[i].z <= 1) { 
-                  stars[i].z = wc.width; 
-                  stars[i].pz = wc.width;
-                  stars[i].x = Math.random()*wc.width-wc.width/2;
-                  stars[i].y = Math.random()*wc.height-wc.height/2;
-                }
-                
-                let sx = (stars[i].x / stars[i].z) * wc.width + cx;
-                let sy = (stars[i].y / stars[i].z) * wc.width + cy;
-                
-                let px = (stars[i].x / stars[i].pz) * wc.width + cx;
-                let py = (stars[i].y / stars[i].pz) * wc.width + cy;
-                
-                wctx.beginPath();
-                wctx.moveTo(px, py);
-                wctx.lineTo(sx, sy);
+                stars[i].pz = stars[i].z; stars[i].z -= speed;
+                if(stars[i].z <= 1) { stars[i].z = wc.width; stars[i].pz = wc.width; stars[i].x = Math.random()*wc.width-wc.width/2; stars[i].y = Math.random()*wc.height-wc.height/2; }
+                let sx = (stars[i].x / stars[i].z) * wc.width + cx; let sy = (stars[i].y / stars[i].z) * wc.width + cy;
+                let px = (stars[i].x / stars[i].pz) * wc.width + cx; let py = (stars[i].y / stars[i].pz) * wc.width + cy;
+                wctx.beginPath(); wctx.moveTo(px, py); wctx.lineTo(sx, sy);
                 wctx.lineWidth = Math.max(0.5, (1 - stars[i].z/wc.width) * 4);
                 wctx.strokeStyle = (i % 4 === 0) ? '${currentColor}' : '#ffffff'; 
                 wctx.stroke();
               }
-
-              if (!isTransitioning || wc.style.opacity !== '0') {
-                animationFrameId = requestAnimationFrame(animateWarp);
-              }
+              if (!isTransitioning || wc.style.opacity !== '0') animationFrameId = requestAnimationFrame(animateWarp);
             }
             animateWarp();
           <\/script>
@@ -568,6 +508,7 @@
       }
     }
 
+    // MAIN PHYSICS ENGINE
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
@@ -607,7 +548,8 @@
       setTimeout(() => isOvercharged = false, 1500);
       for(let i=0; i<15; i++) {
         setTimeout(() => {
-          ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, '#ff00aa'));
+          let c = currentTheme === 'terminal' ? '#00ff00' : (currentTheme === 'crimson' ? '#ff0000' : '#ff00aa');
+          ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, c));
         }, i * 100);
       }
     });
@@ -617,7 +559,8 @@
         isLeftMouseDown = false; 
         if (mouse.x === undefined || mouse.y === undefined) return;
         
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, `hsl(${globalHue}, 100%, 50%)`)); 
+        let rippleColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, rippleColor)); 
 
         for (let i = 0; i < particlesArray.length; i++) {
           let dx = particlesArray[i].x - mouse.x;
@@ -634,7 +577,8 @@
       }
       if (e.button === 2) {
         isRightMouseDown = false;
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, '#ff00aa')); 
+        let c = currentTheme === 'terminal' ? '#00ff00' : (currentTheme === 'crimson' ? '#ff0000' : '#ff00aa');
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, c)); 
       }
     });
 
@@ -651,11 +595,18 @@
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
         
-        let hslMatch = this.colorStr.match(/\d+/g);
-        if(hslMatch && hslMatch.length >= 3) {
-           ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`;
+        // Ensure ripple matches themes properly
+        if(this.colorStr.startsWith('#')) {
+            // hex to rgba manual logic for the custom theme colors
+            ctx.strokeStyle = this.colorStr;
+            ctx.globalAlpha = this.alpha;
         } else {
-           ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; 
+            let hslMatch = this.colorStr.match(/\d+/g);
+            if(hslMatch && hslMatch.length >= 3) {
+               ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`;
+            } else {
+               ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; 
+            }
         }
         
         ctx.lineWidth = this.lineWidth;
@@ -663,6 +614,7 @@
         ctx.shadowColor = this.colorStr;
         ctx.stroke();
         ctx.shadowBlur = 0;
+        ctx.globalAlpha = 1; // reset
       }
       update() {
         let timeScale = isTimeFrozen ? 0.1 : 1;
@@ -681,11 +633,25 @@
       }
       draw() {
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
         
-        let myHue = globalHue + this.hueOffset;
-        let fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
-        
+        // --- THEME SHAPE & COLOR LOGIC ---
+        let fillStyle;
+        if (currentTheme === 'terminal') {
+          fillStyle = isOvercharged ? '#ffffff' : '#00ff00';
+          ctx.rect(this.x - this.size, this.y - this.size, this.size * 2.5, this.size * 2.5);
+        } else if (currentTheme === 'synth') {
+          fillStyle = isOvercharged ? '#ffffff' : (this.hueOffset > 0 ? '#ff00aa' : '#00ffff');
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        } else if (currentTheme === 'crimson') {
+          fillStyle = isOvercharged ? '#ff0000' : '#ff073a';
+          ctx.arc(this.x, this.y, this.size * (Math.random() * 0.5 + 0.8), 0, Math.PI * 2, false); // Glitchy size
+        } else {
+          // Default Neon logic
+          let myHue = globalHue + this.hueOffset;
+          fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
+          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        }
+
         ctx.fillStyle = fillStyle;
         ctx.shadowBlur = isOvercharged ? 25 : 15;
         ctx.shadowColor = fillStyle;
@@ -703,8 +669,8 @@
         }
 
         if (isOvercharged) {
-          this.vx += (Math.random() - 0.5) * 5;
-          this.vy += (Math.random() - 0.5) * 5;
+          this.vx += (Math.random() - 0.5) * (currentTheme === 'crimson' ? 8 : 5);
+          this.vy += (Math.random() - 0.5) * (currentTheme === 'crimson' ? 8 : 5);
         }
 
         if(mouse.x != undefined && mouse.y != undefined) {
@@ -762,6 +728,9 @@
     function initParticles() {
       particlesArray = [];
       let numberOfParticles = (canvas.height * canvas.width) / 8000; 
+      // Fewer particles for terminal to make it cleaner
+      if (currentTheme === 'terminal') numberOfParticles *= 0.7; 
+      
       for (let i = 0; i < numberOfParticles; i++) {
         let size = (Math.random() * 3) + 2; 
         let x = Math.random() * (innerWidth - size * 2) + size;
@@ -773,10 +742,6 @@
     }
 
     function connectParticles() {
-      let baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
-      let sat = isTimeFrozen ? "100%" : "100%";
-      let light = isTimeFrozen ? "50%" : "60%";
-
       for (let a = 0; a < particlesArray.length; a++) {
         for (let b = a; b < particlesArray.length; b++) {
           let dx = particlesArray[a].x - particlesArray[b].x;
@@ -787,7 +752,24 @@
           
           if (distance < connectionLimit) {
             let opacityValue = 1 - (distance / connectionLimit);
-            ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
+            
+            // --- THEME CONNECTION COLOR LOGIC ---
+            if (currentTheme === 'terminal') {
+                ctx.strokeStyle = `rgba(0, 255, 0, ${opacityValue * (isOvercharged ? 1 : 0.5)})`;
+            } else if (currentTheme === 'synth') {
+                let isPink = particlesArray[a].hueOffset > 0;
+                ctx.strokeStyle = isPink 
+                    ? `rgba(255, 0, 170, ${opacityValue * 0.6})` 
+                    : `rgba(0, 255, 255, ${opacityValue * 0.6})`;
+            } else if (currentTheme === 'crimson') {
+                ctx.strokeStyle = `rgba(255, 7, 58, ${opacityValue * 0.7})`;
+            } else {
+                let baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
+                let sat = isTimeFrozen ? "100%" : "100%";
+                let light = isTimeFrozen ? "50%" : "60%";
+                ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
+            }
+            
             ctx.lineWidth = isTimeFrozen ? 3 : (isOvercharged ? 2.5 : 2); 
             ctx.beginPath();
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
@@ -804,7 +786,13 @@
         ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
         ctx.shadowBlur = 40;
-        ctx.shadowColor = isRightMouseDown ? '#ff00aa' : `hsl(${globalHue}, 100%, 50%)`;
+        
+        let c = `hsl(${globalHue}, 100%, 50%)`;
+        if (currentTheme === 'terminal') c = '#00ff00';
+        if (currentTheme === 'synth') c = '#ff00aa';
+        if (currentTheme === 'crimson') c = '#ff0000';
+        
+        ctx.shadowColor = isRightMouseDown ? (currentTheme === 'synth' ? '#00ffff' : '#ffffff') : c;
         ctx.fill();
         ctx.shadowBlur = 0;
       }
@@ -813,20 +801,36 @@
     function animateParticles() {
       requestAnimationFrame(animateParticles);
       
-      // Update logic based on selected theme
-      if (currentThemeMode === 'rainbow') {
+      // Update global theme variable based on selector
+      if (currentTheme === 'default') {
         globalHue += 0.15;
         if (globalHue >= 360) globalHue = 0;
-      } else if (currentThemeMode === 'cyber') {
-        globalHue += 0.2;
-        if (globalHue > 320 || globalHue < 260) globalHue = 260; 
+        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+      } else if (currentTheme === 'terminal') {
+        document.documentElement.style.setProperty('--theme-color', '#00ff00');
+      } else if (currentTheme === 'synth') {
+        document.documentElement.style.setProperty('--theme-color', '#ff00aa');
+      } else if (currentTheme === 'crimson') {
+        document.documentElement.style.setProperty('--theme-color', '#ff073a');
       }
-      // 'matrix' and 'blood' stay static as defined in setTheme()
-
-      document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
       
       if (isTimeFrozen || isOvercharged) {
-        ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
+        // adjust freeze/overcharge trailing color based on theme
+        let overchargeColor = 'rgba(20, 0, 10, 0.25)';
+        let freezeColor = 'rgba(5, 1, 10, 0.15)';
+        
+        if (currentTheme === 'terminal') {
+            overchargeColor = 'rgba(0, 20, 0, 0.25)';
+            freezeColor = 'rgba(0, 5, 0, 0.2)';
+        } else if (currentTheme === 'synth') {
+            overchargeColor = 'rgba(30, 0, 30, 0.3)';
+            freezeColor = 'rgba(10, 0, 20, 0.15)';
+        } else if (currentTheme === 'crimson') {
+            overchargeColor = 'rgba(40, 0, 0, 0.3)';
+            freezeColor = 'rgba(15, 0, 0, 0.15)';
+        }
+
+        ctx.fillStyle = isOvercharged ? overchargeColor : freezeColor;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
       } else {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
