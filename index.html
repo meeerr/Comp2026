@@ -3,285 +3,1193 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPILATION | The Bakery</title>
-<!-- Firebase App (The Bakery Backend) -->
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
-
+<title>COMPILATION</title>
+<!-- GunDB CDN for serverless real-time global chat across devices -->
+<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
 <style>
   :root {
     --theme-color: #00ffff;
-    --bg-color: #05010a;
-    --panel-bg: rgba(5, 2, 10, 0.25);
-    --text-color: #ffffff;
+    --theme-bg-tint: rgba(5, 2, 10, 0.3);
+    --cyan: #00e5ff;
+    --lime: #39ff14;
+    --gold: #ffd700;
+    --orange: #ff6600;
+    --hot-pink: #ff00aa;
+    --electric-blue: #007fff;
+    --magenta: #ff00ff;
+    --bright-green: #32cd32;
+    --neon-red: #ff073a;
+    --forest-green: #228b22;
+    --purple-haze: #7f00ff;
   }
 
-  /* STARTUP ANIMATION */
-  #boot-screen {
-    position: fixed;
-    top: 0; left: 0; width: 100vw; height: 100vh;
-    background: #000;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Courier New', monospace;
-  }
-  .boot-text {
-    color: var(--theme-color);
-    font-size: 1.2rem;
-    overflow: hidden;
-    white-space: nowrap;
-    border-right: 2px solid var(--theme-color);
-    animation: typing 1s steps(20, end), blink .5s step-end infinite;
-  }
-  @keyframes typing { from { width: 0 } to { width: 100% } }
-  @keyframes blink { from, to { border-color: transparent } 50% { border-color: var(--theme-color); } }
+  /* Preset Themes */
+  body[data-theme="dynamic"] { --theme-color: #00ffff; }
+  body[data-theme="synthwave"] { --theme-color: #ff00aa; --theme-bg-tint: rgba(20, 0, 30, 0.4); }
+  body[data-theme="crimson"] { --theme-color: #ff073a; --theme-bg-tint: rgba(30, 0, 5, 0.4); }
+  body[data-theme="matrix"] { --theme-color: #39ff14; --theme-bg-tint: rgba(0, 20, 5, 0.4); }
+  body[data-theme="abyss"] { --theme-color: #00e5ff; --theme-bg-tint: rgba(0, 15, 30, 0.4); }
+  body[data-theme="solar"] { --theme-color: #ffd700; --theme-bg-tint: rgba(30, 20, 0, 0.4); }
+  body[data-theme="nebula"] { --theme-color: #9d00ff; --theme-bg-tint: rgba(18, 0, 32, 0.4); }
 
   body {
-    margin: 0; padding: 0; width: 100vw; height: 100vh;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
     font-family: 'Courier New', Courier, monospace;
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    background-color: var(--bg-color);
-    overflow: hidden; color: var(--text-color);
-    perspective: 1200px; cursor: crosshair; user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: #05010a;
+    overflow: hidden;
+    color: white;
+    perspective: 1200px;
+    cursor: crosshair;
+    user-select: none;
   }
 
-  #canvas-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
+  body:active {
+    cursor: grabbing;
+  }
+
+  #canvas-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+  }
+
+  /* Scanlines */
   .scanlines {
-    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
-    background-size: 100% 4px; pointer-events: none; z-index: 1;
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+    background-size: 100% 4px;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Breathing glow effect */
+  @keyframes panelGlow {
+    0% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 15px rgba(255,255,255,0.1); }
+    100% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 40px var(--theme-color); }
   }
 
   .glass-panel {
-    position: relative; z-index: 2;
-    background: var(--panel-bg); 
+    position: relative;
+    z-index: 2;
+    background: var(--theme-bg-tint); 
     backdrop-filter: blur(12px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 16px; padding: 40px; width: 750px; max-width: 90%;
-    display: flex; flex-direction: column; align-items: center;
-    box-shadow: 0 30px 60px rgba(0,0,0,0.9);
+    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+    padding: 35px 40px;
+    width: 750px;
+    max-width: 90%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: transform 0.1s ease-out, box-shadow 0.2s ease, border-color 0.3s ease;
+    transform-style: preserve-3d;
+    animation: panelGlow 3s infinite alternate ease-in-out;
   }
 
-  h1 { margin: 0; font-weight: 900; letter-spacing: 12px; font-size: 3.5rem; text-shadow: 0 0 15px var(--theme-color); }
+  .title-wrapper {
+    position: relative;
+    margin: 0 0 25px 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
 
-  /* THEMES NAV */
-  .theme-selector {
-    display: flex; gap: 10px; margin-bottom: 20px; z-index: 5;
+  .top-warning {
+    margin-top: 15px;
+    font-size: 12px;
+    color: var(--orange);
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    text-shadow: 0 0 8px rgba(255, 102, 0, 0.6);
   }
-  .theme-dot {
-    width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; transition: transform 0.2s;
-  }
-  .theme-dot:hover { transform: scale(1.3); }
 
-  /* CHAT: THE BAKERY */
-  #bakery-chat {
-    position: fixed; bottom: 20px; right: 20px; width: 300px; height: 400px;
-    background: rgba(0,0,0,0.8); border: 1px solid var(--theme-color);
-    border-radius: 8px; display: flex; flex-direction: column; z-index: 100;
-    box-shadow: 0 0 20px var(--theme-color);
-    transition: transform 0.3s ease;
+  h1 {
+    margin: 0;
+    font-weight: 900;
+    letter-spacing: 12px;
+    font-size: 4.2rem; 
+    color: #fff;
+    text-transform: uppercase;
+    text-align: center;
+    text-shadow: 
+      0 0 5px rgba(255,255,255,0.8),
+      0 0 15px var(--theme-color),
+      0 0 30px var(--theme-color);
+    transition: all 0.3s ease;
+    cursor: pointer;
   }
-  .chat-header { background: var(--theme-color); color: #000; padding: 5px 10px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; }
-  #chat-messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
-  .chat-input-area { display: flex; border-top: 1px solid #444; }
-  #chat-input { background: transparent; border: none; color: white; padding: 10px; flex: 1; outline: none; }
-  
-  .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; margin-top: 20px; }
+
+  h1:hover {
+    letter-spacing: 16px;
+    transform: scale(1.02);
+    text-shadow: 
+      0 0 10px rgba(255,255,255,1),
+      0 0 25px var(--theme-color),
+      0 0 50px var(--theme-color);
+  }
+
+  .splash-quote {
+    position: absolute;
+    top: -15px;
+    right: -80px; 
+    color: #ffea00;
+    font-weight: 900;
+    font-size: 18px; 
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 234, 0, 0.6);
+    transform: rotate(-15deg);
+    pointer-events: auto;
+    cursor: crosshair;
+    animation: splashBounce 0.4s infinite alternate ease-in-out;
+    white-space: nowrap;
+    transition: transform 0.2s;
+  }
+
+  .splash-quote:hover {
+    animation: none;
+    transform: scale(1.2) rotate(10deg);
+    color: var(--theme-color);
+    text-shadow: 1px 1px 0 #000, 0 0 15px var(--theme-color);
+  }
+
+  @keyframes splashBounce {
+    0% { transform: scale(1) rotate(-15deg); }
+    100% { transform: scale(1.05) rotate(-15deg); }
+  }
+
+  /* Themes Bar */
+  .theme-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .theme-pill {
+    background: rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #ccc;
+    font-family: inherit;
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 5px 10px;
+    border-radius: 20px;
+    cursor: crosshair;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+  }
+
+  .theme-pill:hover, .theme-pill.active {
+    color: #000;
+    background: var(--theme-color);
+    border-color: var(--theme-color);
+    box-shadow: 0 0 12px var(--theme-color);
+    font-weight: bold;
+  }
+
+  .grid-container {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 15px;
+    width: 100%;
+    padding: 5px 0;
+    transform: translateZ(25px);
+  }
+
   .place-btn {
-    background: rgba(0, 0, 0, 0.6); border: 1px solid var(--theme-color);
-    color: #e0e0e0; padding: 18px; font-size: 18px; font-weight: bold;
-    cursor: crosshair; border-radius: 8px; transition: all 0.3s;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: #e0e0e0;
+    padding: 22px 18px;
+    font-size: 18px; 
+    font-family: inherit;
+    font-weight: bold;
+    letter-spacing: 3px; 
+    cursor: crosshair;
+    border-radius: 8px;
+    transition: all 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.4s ease-out, transform 0.3s ease-out;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    overflow: hidden;
   }
-  .place-btn:hover { background: var(--theme-color); color: #000; box-shadow: 0 0 20px var(--theme-color); }
-  
-  .minimized { transform: translateY(365px); }
+
+  .place-btn > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  .place-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: scale(1.02);
+    border-color: rgba(255, 255, 255, 0.4);
+  }
+
+  .place-btn.is-gold { border-color: var(--gold); }
+  .place-btn.is-bright-green { border-color: var(--bright-green); }
+
+  .place-btn.is-gold:hover { box-shadow: 0 0 18px 6px rgba(255, 215, 0, 0.7); }
+  .place-btn.is-bright-green:hover { box-shadow: 0 0 18px 6px rgba(50, 205, 50, 0.7); }
+
+  .mini-label {
+    font-size: 11px;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+    text-shadow: 0 0 8px currentColor;
+    animation: pulseBadge 1.5s infinite alternate ease-in-out;
+  }
+
+  @keyframes pulseBadge {
+    0% { opacity: 0.7; transform: scale(0.98); }
+    100% { opacity: 1; transform: scale(1.02); }
+  }
+
+  .status-working {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.4);
+    margin-top: 6px;
+    letter-spacing: 1px;
+    font-weight: normal;
+  }
+  .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.9); }
+
+  /* Bakery Launcher Bar */
+  .bakery-toggle-btn {
+    margin-top: 20px;
+    width: 100%;
+    background: rgba(0, 0, 0, 0.75);
+    border: 1px dashed var(--theme-color);
+    color: #fff;
+    padding: 14px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    cursor: crosshair;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .bakery-toggle-btn:hover {
+    background: var(--theme-color);
+    color: #000;
+    box-shadow: 0 0 25px var(--theme-color);
+    border-style: solid;
+  }
+
+  .oven-dot {
+    width: 8px;
+    height: 8px;
+    background: #39ff14;
+    border-radius: 50%;
+    box-shadow: 0 0 8px #39ff14;
+    animation: ovenPulse 1s infinite alternate;
+  }
+
+  @keyframes ovenPulse {
+    0% { opacity: 0.4; }
+    100% { opacity: 1; }
+  }
+
+  /* BAKERY GLOBAL CHAT DRAWER */
+  .bakery-chat-panel {
+    position: fixed;
+    right: -420px;
+    top: 0;
+    width: 390px;
+    height: 100vh;
+    background: rgba(5, 2, 12, 0.88);
+    backdrop-filter: blur(20px) saturate(200%);
+    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    border-left: 2px solid var(--theme-color);
+    box-shadow: -10px 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(0, 255, 255, 0.1);
+    z-index: 100;
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .bakery-chat-panel.open {
+    right: 0;
+  }
+
+  .chat-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(0,0,0,0.4);
+  }
+
+  .chat-title {
+    font-weight: 900;
+    letter-spacing: 2px;
+    color: #fff;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-shadow: 0 0 10px var(--theme-color);
+  }
+
+  .chat-close-btn {
+    background: transparent;
+    border: none;
+    color: #aaa;
+    font-size: 20px;
+    cursor: crosshair;
+    font-family: inherit;
+    transition: color 0.2s;
+  }
+  .chat-close-btn:hover { color: var(--theme-color); }
+
+  .chat-user-bar {
+    padding: 10px 20px;
+    background: rgba(0,0,0,0.3);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+  }
+
+  .chat-user-input {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: var(--theme-color);
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 12px;
+    width: 140px;
+  }
+
+  .chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 15px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    font-size: 13px;
+  }
+
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--theme-color); border-radius: 2px; }
+
+  .chat-bubble {
+    background: rgba(255, 255, 255, 0.04);
+    border-left: 2px solid var(--theme-color);
+    padding: 8px 12px;
+    border-radius: 0 8px 8px 0;
+    word-break: break-word;
+    animation: msgFade 0.2s ease-out;
+  }
+
+  @keyframes msgFade {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .chat-msg-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 4px;
+    font-size: 11px;
+  }
+
+  .chat-msg-user {
+    font-weight: bold;
+    color: var(--theme-color);
+  }
+
+  .chat-msg-time {
+    color: rgba(255,255,255,0.4);
+  }
+
+  .chat-msg-text {
+    color: #eee;
+    line-height: 1.4;
+  }
+
+  .chat-input-area {
+    padding: 15px 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex;
+    gap: 8px;
+    background: rgba(0,0,0,0.5);
+  }
+
+  .chat-msg-input {
+    flex: 1;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    outline: none;
+  }
+
+  .chat-msg-input:focus {
+    border-color: var(--theme-color);
+    box-shadow: 0 0 8px var(--theme-color);
+  }
+
+  .chat-send-btn {
+    background: var(--theme-color);
+    color: #000;
+    border: none;
+    padding: 0 16px;
+    border-radius: 6px;
+    font-weight: bold;
+    font-family: inherit;
+    cursor: crosshair;
+    transition: all 0.2s;
+  }
+
+  .chat-send-btn:hover {
+    box-shadow: 0 0 12px var(--theme-color);
+    transform: scale(1.05);
+  }
+
+  /* STARTUP ANIMATION OVERLAY */
+  #startup-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: #020005;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.4s ease-out;
+    pointer-events: auto;
+  }
+
+  .startup-loader {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .startup-logo {
+    font-size: 40px;
+    font-weight: 900;
+    letter-spacing: 16px;
+    color: #fff;
+    text-shadow: 0 0 20px #00ffff, 0 0 40px #00ffff;
+    animation: bootGlitch 0.6s infinite alternate;
+  }
+
+  .startup-bar-container {
+    width: 280px;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .startup-bar-fill {
+    position: absolute;
+    top: 0; left: 0;
+    height: 100%;
+    width: 0%;
+    background: var(--theme-color);
+    box-shadow: 0 0 10px var(--theme-color);
+    animation: bootFill 1.1s cubic-bezier(0.1, 0.7, 0.1, 1) forwards;
+  }
+
+  .startup-sub {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: rgba(255,255,255,0.6);
+    text-transform: uppercase;
+  }
+
+  @keyframes bootFill {
+    0% { width: 0%; }
+    50% { width: 60%; }
+    100% { width: 100%; }
+  }
+
+  @keyframes bootGlitch {
+    0% { opacity: 0.9; transform: skew(0deg); }
+    50% { opacity: 1; transform: skew(-1deg); }
+    100% { opacity: 0.8; transform: skew(1deg); }
+  }
+
+  .test-tool { position: absolute; bottom: 20px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
+  .test-tool:hover { opacity: 1; }
+  .test-input { background: #111; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; font-family: inherit; width: 200px; cursor: text;}
+  .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
+  .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
 </style>
 </head>
-<body>
+<body data-theme="dynamic">
 
-  <div id="boot-screen">
-    <div class="boot-text">INITIALIZING_COMPILATION...</div>
+  <!-- Startup Boot Animation -->
+  <div id="startup-overlay" onclick="dismissStartup()">
+    <div class="startup-loader">
+      <div class="startup-logo">COMPILATION</div>
+      <div class="startup-bar-container">
+        <div class="startup-bar-fill"></div>
+      </div>
+      <div class="startup-sub" id="boot-status">INITIALIZING SYSTEM KERNEL...</div>
+    </div>
   </div>
 
   <canvas id="canvas-bg"></canvas>
   <div class="scanlines"></div>
 
-  <div class="theme-selector">
-    <div class="theme-dot" style="background:#00ffff" onclick="setTheme('cyber')"></div>
-    <div class="theme-dot" style="background:#ff0044" onclick="setTheme('lava')"></div>
-    <div class="theme-dot" style="background:#39ff14" onclick="setTheme('matrix')"></div>
-    <div class="theme-dot" style="background:#ff00ff" onclick="setTheme('synth')"></div>
-    <div class="theme-dot" style="background:#ffd700" onclick="setTheme('gold')"></div>
-    <div class="theme-dot" style="background:#007fff" onclick="setTheme('deepsea')"></div>
-  </div>
-
   <div class="glass-panel" id="tilt-panel">
-    <h1>COMPILATION</h1>
+    <div class="title-wrapper">
+      <h1 id="main-title">COMPILATION</h1>
+      <div class="splash-quote" id="splash-text"></div>
+      <div class="top-warning">if you visit these sites without using compilation they wont work when you try again</div>
+    </div>
+
+    <!-- 6 Unique Themes Switcher Bar -->
+    <div class="theme-bar">
+      <button class="theme-pill active" onclick="setTheme('dynamic', this)">Dynamic RGB</button>
+      <button class="theme-pill" onclick="setTheme('synthwave', this)">Synthwave '84</button>
+      <button class="theme-pill" onclick="setTheme('crimson', this)">Crimson Void</button>
+      <button class="theme-pill" onclick="setTheme('matrix', this)">Matrix Toxic</button>
+      <button class="theme-pill" onclick="setTheme('abyss', this)">Abyss Biolum</button>
+      <button class="theme-pill" onclick="setTheme('solar', this)">Solar Flare</button>
+      <button class="theme-pill" onclick="setTheme('nebula', this)">Purple Nebula</button>
+    </div>
+
+    <!-- PIE PLACES: 04 and 05 Only -->
     <div class="grid-container" id="menu"></div>
+
+    <!-- The Bakery Live Chat Button -->
+    <button class="bakery-toggle-btn" onclick="toggleBakeryChat()">
+      <span class="oven-dot"></span>
+      <span>ENTER THE BAKERY [GLOBAL CHAT]</span>
+    </button>
   </div>
 
-  <!-- THE BAKERY CHAT -->
-  <div id="bakery-chat" class="minimized">
-    <div class="chat-header" onclick="toggleChat()">
-      <span>THE BAKERY</span>
-      <span id="chat-toggle-btn">+</span>
+  <!-- THE BAKERY GLOBAL CHAT DRAWER -->
+  <div class="bakery-chat-panel" id="bakery-panel">
+    <div class="chat-header">
+      <div class="chat-title">
+        <span class="oven-dot"></span>
+        <span>THE BAKERY</span>
+      </div>
+      <button class="chat-close-btn" onclick="toggleBakeryChat()">✕</button>
     </div>
-    <div id="chat-messages"></div>
+    <div class="chat-user-bar">
+      <span>HANDLE:</span>
+      <input type="text" id="chatHandle" class="chat-user-input" maxlength="15" placeholder="Baker_#">
+    </div>
+    <div class="chat-messages" id="chatList"></div>
     <div class="chat-input-area">
-      <input type="text" id="chat-input" placeholder="Say something..." maxlength="100">
+      <input type="text" id="chatInput" class="chat-msg-input" placeholder="Bake a message..." maxlength="200" onkeydown="handleChatKey(event)">
+      <button class="chat-send-btn" onclick="sendBakeryMessage()">SEND</button>
     </div>
+  </div>
+
+  <div class="test-tool">
+    <input type="text" id="testUrl" class="test-input" placeholder="URL to Hex">
+    <button onclick="testLink()" class="test-btn">ENCODE</button>
   </div>
 
   <script>
-    // 1. STARTUP ANIMATION
-    window.addEventListener('load', () => {
-      setTimeout(() => {
-        document.getElementById('boot-screen').style.opacity = '0';
-        setTimeout(() => document.getElementById('boot-screen').remove(), 500);
-      }, 1200);
-    });
+    /* STARTUP SEQUENCE */
+    function dismissStartup() {
+      const overlay = document.getElementById('startup-overlay');
+      if (overlay && overlay.style.display !== 'none') {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 400);
+      }
+    }
+    setTimeout(() => {
+      const status = document.getElementById('boot-status');
+      if(status) status.innerText = "WARP CORES STABILIZED";
+    }, 600);
+    setTimeout(dismissStartup, 1400);
+    window.addEventListener('keydown', (e) => { if(e.key === 'Escape') dismissStartup(); });
 
-    // 2. THEMES CONFIG
-    const themes = {
-      cyber: { color: '#00ffff', bg: '#05010a' },
-      lava: { color: '#ff0044', bg: '#0a0101' },
-      matrix: { color: '#39ff14', bg: '#010a02' },
-      synth: { color: '#ff00ff', bg: '#0a010a' },
-      gold: { color: '#ffd700', bg: '#0a0801' },
-      deepsea: { color: '#007fff', bg: '#01050a' }
+    /* THEMES LOGIC */
+    let currentTheme = 'dynamic';
+    const themeHues = {
+      dynamic: 180,
+      synthwave: 320,
+      crimson: 350,
+      matrix: 120,
+      abyss: 190,
+      solar: 45,
+      nebula: 275
     };
 
-    function setTheme(name) {
-      const t = themes[name];
-      document.documentElement.style.setProperty('--theme-color', t.color);
-      document.documentElement.style.setProperty('--bg-color', t.bg);
-      globalHue = getHueFromHex(t.color);
+    function setTheme(name, btn) {
+      currentTheme = name;
+      document.body.setAttribute('data-theme', name);
+      document.querySelectorAll('.theme-pill').forEach(b => b.classList.remove('active'));
+      if(btn) btn.classList.add('active');
+
+      if (name !== 'dynamic') {
+        globalHue = themeHues[name];
+        const hexMap = {
+          synthwave: '#ff00aa',
+          crimson: '#ff073a',
+          matrix: '#39ff14',
+          abyss: '#00e5ff',
+          solar: '#ffd700',
+          nebula: '#9d00ff'
+        };
+        document.documentElement.style.setProperty('--theme-color', hexMap[name]);
+      }
     }
 
-    function getHueFromHex(hex) {
-        var r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
-        var max = Math.max(r, g, b), min = Math.min(r, g, b);
-        var h, s, l = (max + min) / 2;
-        if(max == min){ h = s = 0; }
-        else {
-            var d = max - min;
-            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-            switch(max){
-                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
-                case g: h = (b - r) / d + 2; break;
-                case b: h = (r - g) / d + 4; break;
-            }
-            h /= 6;
-        }
-        return h * 360;
-    }
+    const quotes = [
+      "100% legal",
+      "Also try Opera GX",
+      "Never leave your pie in for too long",
+      "Remember the good old days",
+      "RIP Sweet Tea",
+      "JC>CC",
+      "T-cubed",
+      "Takis! Takis! Takis!",
+      "does anyone even read these?",
+      "Lafayette B.",
+      "No Oil rigs here",
+      "say grenade 10 times fast",
+      "2-Crack, Plumbous, Rodrick, Slopadopalis",
+      "BLEHELEHEHHEEHH",
+      "Stay Strong Showtime Abdul Al Baker",
+      "Apple pie is good",
+      "time to get some stuff done",
+      "Travis or Youngboy?",
+      "This site has 1.3K views as of Feb 26",
+      "are you rushing or are you dragging?",
+      "Not quite my tempo...",
+      "That's my tempo..."
+    ];
+    document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
 
-    // 3. PLACES (Filtered to 04 and 05)
+    /* ONLY PIE PLACE 04 AND 05 */
     const places = [
-      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576" },
-      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f" }
+      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold', isFavorite: true },
+      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green', isClassic: true }
     ];
 
     const menu = document.getElementById('menu');
+    const panel = document.getElementById('tilt-panel');
+
     places.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'place-btn';
-      btn.innerText = p.label;
-      btn.onclick = () => {
-        let u = '';
-        for (let i = 0; i < p.hex.length; i += 2) u += String.fromCharCode(parseInt(p.hex.substr(i, 2), 16));
-        window.open(u, '_blank');
-      };
+      if (p.colorClass) btn.classList.add(p.colorClass);
+
+      let topLabel = '';
+      if (p.isFavorite) {
+        topLabel = `<span class="mini-label" style="color: var(--gold);">★ FAVORITE ★</span>`;
+      } else if (p.isClassic) {
+        topLabel = `<span class="mini-label" style="color: var(--cyan);">⚙️ CLASSIC ⚙️</span>`;
+      }
+
+      let statusHtml = `<span class="status-working">working</span>`;
+      btn.innerHTML = `${topLabel}<span>${p.label}</span>${statusHtml}`;
+      btn.onclick = () => initSession(p.hex);
       menu.appendChild(btn);
     });
 
-    // 4. THE BAKERY CHAT LOGIC
-    function toggleChat() {
-      const chat = document.getElementById('bakery-chat');
-      const btn = document.getElementById('chat-toggle-btn');
-      chat.classList.toggle('minimized');
-      btn.innerText = chat.classList.contains('minimized') ? '+' : '-';
+    document.addEventListener('mousemove', (e) => {
+      let xAxis = (window.innerWidth / 2 - e.pageX) / 150; 
+      let yAxis = (window.innerHeight / 2 - e.pageY) / -150;
+      panel.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
+    });
+    
+    document.addEventListener('mouseleave', () => {
+      panel.style.transform = `rotateY(0deg) rotateX(0deg)`;
+    });
+
+    function initSession(h) {
+      let u = '';
+      for (let i = 0; i < h.length; i += 2) u += String.fromCharCode(parseInt(h.substr(i, 2), 16));
+      launch(u);
     }
 
-    // --- FIREBASE CONFIGURATION ---
-    // TO MAKE CHAT WORK: 
-    // 1. Go to firebase.google.com, create a project.
-    // 2. Enable "Realtime Database" and set rules to: { ".read": true, ".write": true } (for testing).
-    // 3. Replace the config below with yours.
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      databaseURL: "YOUR_DATABASE_URL",
-      projectId: "YOUR_PROJECT_ID",
-    };
-
-    // Only initialize if keys are provided
-    if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        const chatRef = db.ref("messages");
-
-        document.getElementById('chat-input').addEventListener('keypress', (e) => {
-          if (e.key === 'Enter' && e.target.value.trim() !== "") {
-            chatRef.push({
-              msg: e.target.value,
-              ts: Date.now()
-            });
-            e.target.value = "";
-          }
-        });
-
-        chatRef.limitToLast(20).on("child_added", (snap) => {
-          const data = snap.val();
-          const div = document.createElement('div');
-          div.innerHTML = `<span style="color:var(--theme-color)">[Anonymous]:</span> ${data.msg}`;
-          const box = document.getElementById('chat-messages');
-          box.appendChild(div);
-          box.scrollTop = box.scrollHeight;
-        });
-    } else {
-        document.getElementById('chat-messages').innerHTML = "Set up Firebase keys to enable The Bakery.";
+    function testLink() {
+      const url = document.getElementById('testUrl').value;
+      if(!url) return;
+      let hex = '';
+      for(let i=0;i<url.length;i++) hex += url.charCodeAt(i).toString(16);
+      launch(url);
     }
 
-    // 5. PARTICLE SYSTEM (Original Physics Maintained)
+    function launch(url) {
+      const id = Math.floor(Math.random() * 100000);
+      const sep = url.includes('?') ? '&' : '?';
+      const target = `${url}${sep}session=${id}`;
+
+      const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
+
+      const greetings = ["good luck", "have fun", "Goodbye", "See ya"];
+      const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+      const w = window.open('about:blank', '_blank');
+      if (w) {
+        w.document.write(`
+          <style>
+            html, body { margin: 0; padding: 0; background: #000; overflow: hidden; width: 100vw; height: 100vh; color: #fff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+            .msg { font-size: 36px; font-weight: bold; z-index: 10; animation: float 2s infinite alternate ease-in-out; text-align: center; transition: opacity 0.5s ease; text-shadow: 0 0 15px ${currentColor}, 0 0 30px ${currentColor}; pointer-events: none; }
+            .sub { font-size: 18px; color: rgba(255,255,255,0.8); margin-top: 15px; text-shadow: none; pointer-events: none; }
+            @keyframes float { 0% { transform: translateY(-5px); } 100% { transform: translateY(5px); } }
+            iframe { 
+              display: block; width: 100vw; height: 100vh; border: none; margin: 0; padding: 0; position: absolute; top: 0; left: 0; 
+              z-index: 3; background: #000; opacity: 0; transform: scale(0.01); 
+              transition: transform 0.65s cubic-bezier(0.1, 1, 0.2, 1), opacity 0.3s ease-out; 
+            }
+            canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; transition: opacity 1.5s ease-in-out; }
+          </style>
+          
+          <canvas id="warpCanvas"></canvas>
+          <iframe id="frm" src="${target}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"></iframe>
+          <div class="msg" id="ldr">${randomGreeting}<div class="sub">-Meowmaster</div></div>
+          
+          <script>
+            const wc = document.getElementById('warpCanvas');
+            const wctx = wc.getContext('2d');
+            let stars = [];
+            wc.width = window.innerWidth; wc.height = window.innerHeight;
+            
+            for(let i=0; i<600; i++) {
+              stars.push({
+                x: Math.random()*wc.width-wc.width/2, 
+                y: Math.random()*wc.height-wc.height/2, 
+                z: Math.random()*wc.width,
+                pz: Math.random()*wc.width 
+              });
+            }
+            
+            let speed = 0.5;
+            let animationFrameId;
+            let isTransitioning = false;
+
+            function animateWarp() {
+              speed += 0.2 + (speed * 0.025); 
+              
+              if (speed > 130 && !isTransitioning) {
+                isTransitioning = true;
+                document.getElementById('ldr').style.opacity = '0';
+                const frame = document.getElementById('frm');
+                frame.style.opacity = '1';
+                frame.style.transform = 'scale(1)';
+                setTimeout(() => { wc.style.opacity = '0'; }, 800);
+                setTimeout(() => { cancelAnimationFrame(animationFrameId); }, 2500);
+              }
+
+              wctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+              wctx.fillRect(0,0,wc.width,wc.height);
+              let cx = wc.width/2; let cy = wc.height/2;
+              
+              for(let i=0; i<stars.length; i++) {
+                stars[i].pz = stars[i].z; 
+                stars[i].z -= speed;
+                if(stars[i].z <= 1) { 
+                  stars[i].z = wc.width; 
+                  stars[i].pz = wc.width;
+                  stars[i].x = Math.random()*wc.width-wc.width/2;
+                  stars[i].y = Math.random()*wc.height-wc.height/2;
+                }
+                let sx = (stars[i].x / stars[i].z) * wc.width + cx;
+                let sy = (stars[i].y / stars[i].z) * wc.width + cy;
+                let px = (stars[i].x / stars[i].pz) * wc.width + cx;
+                let py = (stars[i].y / stars[i].pz) * wc.width + cy;
+                
+                wctx.beginPath();
+                wctx.moveTo(px, py);
+                wctx.lineTo(sx, sy);
+                wctx.lineWidth = Math.max(0.5, (1 - stars[i].z/wc.width) * 4);
+                wctx.strokeStyle = (i % 4 === 0) ? '${currentColor}' : '#ffffff'; 
+                wctx.stroke();
+              }
+
+              if (!isTransitioning || wc.style.opacity !== '0') {
+                animationFrameId = requestAnimationFrame(animateWarp);
+              }
+            }
+            animateWarp();
+          <\/script>
+        `);
+        w.document.close();
+      }
+    }
+
+    /* THE BAKERY GLOBAL CHAT ENGINE (GunDB P2P Mesh for GitHub Pages) */
+    const defaultHandle = 'Baker_' + Math.floor(1000 + Math.random() * 9000);
+    const handleInput = document.getElementById('chatHandle');
+    handleInput.value = localStorage.getItem('bakery_handle') || defaultHandle;
+    handleInput.addEventListener('change', () => {
+      localStorage.setItem('bakery_handle', handleInput.value.trim() || defaultHandle);
+    });
+
+    const gun = Gun([
+      'https://gun-manhattan.herokuapp.com/gun',
+      'https://peer.wallie.io/gun',
+      'https://gundb-relay.glitch.me/gun'
+    ]);
+    const bakeryChat = gun.get('compilation_the_bakery_v3');
+    const chatList = document.getElementById('chatList');
+    const receivedMsgs = new Set();
+
+    bakeryChat.map().on((msg, id) => {
+      if (!msg || !msg.text || receivedMsgs.has(id)) return;
+      receivedMsgs.add(id);
+
+      const bubble = document.createElement('div');
+      bubble.className = 'chat-bubble';
+      const timeStr = msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      
+      const safeUser = document.createElement('div'); safeUser.innerText = msg.user || 'Anon';
+      const safeText = document.createElement('div'); safeText.innerText = msg.text || '';
+
+      bubble.innerHTML = `
+        <div class="chat-msg-header">
+          <span class="chat-msg-user">${safeUser.innerHTML}</span>
+          <span class="chat-msg-time">${timeStr}</span>
+        </div>
+        <div class="chat-msg-text">${safeText.innerHTML}</div>
+      `;
+      chatList.appendChild(bubble);
+      chatList.scrollTop = chatList.scrollHeight;
+    });
+
+    function toggleBakeryChat() {
+      const p = document.getElementById('bakery-panel');
+      p.classList.toggle('open');
+      if (p.classList.contains('open')) {
+        document.getElementById('chatInput').focus();
+      }
+    }
+
+    function handleChatKey(e) {
+      if (e.key === 'Enter') sendBakeryMessage();
+    }
+
+    function sendBakeryMessage() {
+      const input = document.getElementById('chatInput');
+      const text = input.value.trim();
+      if (!text) return;
+
+      const user = handleInput.value.trim() || defaultHandle;
+      const msgObj = {
+        user: user,
+        text: text,
+        time: Date.now()
+      };
+
+      bakeryChat.set(msgObj);
+      input.value = '';
+    }
+
+    /* MAIN PHYSICS ENGINE */
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
-    let globalHue = 180;
-    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+    let ripplesArray = []; 
+    
+    let globalHue = 180; 
+    
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let mouse = { x: null, y: null };
+    let isLeftMouseDown = false;
+    let isRightMouseDown = false;
+    let isTimeFrozen = false; 
+    let isOvercharged = false; 
+
+    window.addEventListener('mousemove', function(e) { mouse.x = e.x; mouse.y = e.y; });
+    window.addEventListener('mouseout', function() { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false;});
+    
+    window.addEventListener('mousedown', (e) => { 
+      if (e.button === 0) isLeftMouseDown = true; 
+      if (e.button === 2) isRightMouseDown = true;
+    });
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
+    window.addEventListener('keydown', (e) => { 
+      if (e.code === 'Space' && e.target.tagName !== 'INPUT') isTimeFrozen = true; 
+      if (e.key === 'Shift') isOvercharged = true; 
+    });
+    window.addEventListener('keyup', (e) => { 
+      if (e.code === 'Space') isTimeFrozen = false; 
+      if (e.key === 'Shift') isOvercharged = false; 
+    });
+
+    document.getElementById('main-title').addEventListener('dblclick', (e) => {
+      isOvercharged = true;
+      setTimeout(() => isOvercharged = false, 1500);
+      for(let i=0; i<15; i++) {
+        setTimeout(() => {
+          ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, '#ff00aa'));
+        }, i * 100);
+      }
+    });
+
+    window.addEventListener('mouseup', (e) => { 
+      if (e.button === 0) {
+        isLeftMouseDown = false; 
+        if (mouse.x === undefined || mouse.y === undefined) return;
+        
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, `hsl(${globalHue}, 100%, 50%)`)); 
+
+        for (let i = 0; i < particlesArray.length; i++) {
+          let dx = particlesArray[i].x - mouse.x;
+          let dy = particlesArray[i].y - mouse.y;
+          let distance = Math.sqrt(dx*dx + dy*dy);
+          if (distance < 400) { 
+            let force = (400 - distance) / 6; 
+            let dirX = dx / distance;
+            let dirY = dy / distance;
+            particlesArray[i].vx += dirX * force;
+            particlesArray[i].vy += dirY * force;
+          }
+        }
+      }
+      if (e.button === 2) {
+        isRightMouseDown = false;
+        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, '#ff00aa')); 
+      }
+    });
+
+    class Ripple {
+      constructor(x, y, isMega = false, colorStr) {
+        this.x = x; this.y = y; 
+        this.radius = 10; 
+        this.alpha = 1; 
+        this.colorStr = colorStr;
+        this.lineWidth = isMega ? 20 : 8;
+        this.expansionRate = isMega ? 30 : 15;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        
+        let hslMatch = this.colorStr.match(/\d+/g);
+        if(hslMatch && hslMatch.length >= 3) {
+           ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`;
+        } else {
+           ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; 
+        }
+        
+        ctx.lineWidth = this.lineWidth;
+        ctx.shadowBlur = 30;
+        ctx.shadowColor = this.colorStr;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      update() {
+        let timeScale = isTimeFrozen ? 0.1 : 1;
+        this.radius += this.expansionRate * timeScale; 
+        this.alpha -= (0.1 * timeScale); 
+        this.lineWidth *= (1 - (0.08 * timeScale)); 
+      }
+    }
 
     class Particle {
       constructor(x, y, vx, vy, size) {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy;
-        this.baseVx = vx; this.baseVy = vy; this.size = size;
+        this.baseVx = vx; this.baseVy = vy;
+        this.size = size; 
+        this.hueOffset = (Math.random() * 40) - 20; 
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
+        
+        let myHue = globalHue + this.hueOffset;
+        let fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
+        
+        ctx.fillStyle = fillStyle;
+        ctx.shadowBlur = isOvercharged ? 25 : 15;
+        ctx.shadowColor = fillStyle;
+        ctx.fill();
+        ctx.shadowBlur = 0; 
       }
       update() {
-        if (this.x > canvas.width || this.x < 0) this.vx = -this.vx;
-        if (this.y > canvas.height || this.y < 0) this.vy = -this.vy;
-        this.x += this.vx; this.y += this.vy;
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = `hsl(${globalHue}, 100%, 50%)`;
-        ctx.fill();
+        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
+          this.vx = -this.vx; this.baseVx = -this.baseVx;
+          if(this.x < 0) this.x = this.size; else this.x = canvas.width - this.size;
+        }
+        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
+          this.vy = -this.vy; this.baseVy = -this.baseVy;
+          if(this.y < 0) this.y = this.size; else this.y = canvas.height - this.size;
+        }
+
+        if (isOvercharged) {
+          this.vx += (Math.random() - 0.5) * 5;
+          this.vy += (Math.random() - 0.5) * 5;
+        }
+
+        if(mouse.x != undefined && mouse.y != undefined) {
+          let dx = mouse.x - this.x;
+          let dy = mouse.y - this.y;
+          let distance = Math.sqrt(dx*dx + dy*dy);
+          
+          if (distance < 600) {
+            let dirX = dx / distance;
+            let dirY = dy / distance;
+            let force = (600 - distance) / 600; 
+
+            if (isLeftMouseDown) {
+              this.vx += dirX * force * 6;
+              this.vy += dirY * force * 6;
+              this.vx += dirY * force * 2.5;
+              this.vy -= dirX * force * 2.5;
+              
+              if (distance < 50) {
+                this.vx *= 0.2; 
+                this.vy *= 0.2; 
+                this.x += (mouse.x - this.x) * 0.15; 
+                this.y += (mouse.y - this.y) * 0.15; 
+              }
+            } else if (isRightMouseDown) {
+              this.vx -= dirX * force * 4;
+              this.vy -= dirY * force * 4;
+            } else if (distance < 120 && !isOvercharged) {
+              let hoverForce = (120 - distance) / 120;
+              this.vx -= dirX * hoverForce * 0.5;
+              this.vy -= dirY * hoverForce * 0.5;
+            }
+          }
+        }
+
+        let currentSpeedSq = this.vx * this.vx + this.vy * this.vy;
+        let baseSpeedSq = this.baseVx * this.baseVx + this.baseVy * this.baseVy;
+
+        if (currentSpeedSq > baseSpeedSq * 2 && !isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
+          this.vx *= 0.93; 
+          this.vy *= 0.93;
+        } else if (!isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
+          this.vx += (this.baseVx - this.vx) * 0.02;
+          this.vy += (this.baseVy - this.vy) * 0.02;
+        }
+
+        let timeScale = isTimeFrozen ? 0.05 : 1;
+        this.x += this.vx * timeScale; 
+        this.y += this.vy * timeScale;
+        
+        this.draw();
       }
     }
 
-    function init() {
+    function initParticles() {
       particlesArray = [];
-      for (let i = 0; i < 100; i++) {
-        particlesArray.push(new Particle(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*2-1, Math.random()*2-1, 2));
+      let numberOfParticles = (canvas.height * canvas.width) / 8000; 
+      for (let i = 0; i < numberOfParticles; i++) {
+        let size = (Math.random() * 3) + 2; 
+        let x = Math.random() * (innerWidth - size * 2) + size;
+        let y = Math.random() * (innerHeight - size * 2) + size;
+        let vx = (Math.random() * 2) - 1; 
+        let vy = (Math.random() * 2) - 1;
+        particlesArray.push(new Particle(x, y, vx, vy, size));
       }
     }
 
-    function animate() {
-      ctx.fillStyle = 'rgba(5, 1, 10, 0.2)';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      particlesArray.forEach(p => p.update());
-      requestAnimationFrame(animate);
+    function connectParticles() {
+      let baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
+      let sat = isTimeFrozen ? "100%" : "100%";
+      let light = isTimeFrozen ? "50%" : "60%";
+
+      for (let a = 0; a < particlesArray.length; a++) {
+        for (let b = a; b < particlesArray.length; b++) {
+          let dx = particlesArray[a].x - particlesArray[b].x;
+          let dy = particlesArray[a].y - particlesArray[b].y;
+          let distance = dx*dx + dy*dy;
+          
+          let connectionLimit = isOvercharged ? 25000 : 15000;
+          
+          if (distance < connectionLimit) {
+            let opacityValue = 1 - (distance / connectionLimit);
+            ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
+            ctx.lineWidth = isTimeFrozen ? 3 : (isOvercharged ? 2.5 : 2); 
+            ctx.beginPath();
+            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
+            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
+            ctx.stroke();
+          }
+        }
+      }
     }
-    init(); animate();
+
+    function drawVortexCore() {
+      if ((isLeftMouseDown || isRightMouseDown) && mouse.x != undefined) {
+        ctx.beginPath();
+        ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2);
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowBlur = 40;
+        ctx.shadowColor = isRightMouseDown ? '#ff00aa' : `hsl(${globalHue}, 100%, 50%)`;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+    }
+
+    function animateParticles() {
+      requestAnimationFrame(animateParticles);
+      
+      if (currentTheme === 'dynamic') {
+        globalHue += 0.15;
+        if (globalHue >= 360) globalHue = 0;
+        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+      }
+      
+      if (isTimeFrozen || isOvercharged) {
+        ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      }
+
+      for (let i = ripplesArray.length - 1; i >= 0; i--) {
+        ripplesArray[i].update(); ripplesArray[i].draw();
+        if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1);
+      }
+
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+      }
+      
+      connectParticles();
+      drawVortexCore();
+    }
+
+    window.addEventListener('resize', function() {
+      canvas.width = innerWidth; canvas.height = innerHeight;
+      initParticles();
+    });
+
+    initParticles(); 
+    animateParticles();
   </script>
 </body>
 </html>
