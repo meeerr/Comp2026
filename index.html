@@ -3,660 +3,285 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>COMPILATION</title>
+<title>COMPILATION | The Bakery</title>
+<!-- Firebase App (The Bakery Backend) -->
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
+
 <style>
-  /* --- GLOBAL CSS VARIABLES (DEFAULT NEON THEME) --- */
   :root {
-    --theme-color: #00ffff; 
+    --theme-color: #00ffff;
     --bg-color: #05010a;
-    --font-main: 'Courier New', Courier, monospace;
     --panel-bg: rgba(5, 2, 10, 0.25);
-    --panel-border: 1px solid rgba(255, 255, 255, 0.1);
-    --panel-radius: 16px;
-    --panel-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05);
-    --text-color: #fff;
-    --title-shadow: 0 0 5px rgba(255,255,255,0.8), 0 0 15px var(--theme-color);
-    --btn-bg: rgba(0, 0, 0, 0.6);
-    --btn-border: 1px solid rgba(255, 255, 255, 0.15);
-    --btn-radius: 8px;
-    --btn-hover-scale: scale(1.01);
-    --canvas-display: block;
-    --scanline-display: block;
-    --css-bg-display: none;
-    --splash-color: #ffea00;
+    --text-color: #ffffff;
   }
+
+  /* STARTUP ANIMATION */
+  #boot-screen {
+    position: fixed;
+    top: 0; left: 0; width: 100vw; height: 100vh;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+  }
+  .boot-text {
+    color: var(--theme-color);
+    font-size: 1.2rem;
+    overflow: hidden;
+    white-space: nowrap;
+    border-right: 2px solid var(--theme-color);
+    animation: typing 1s steps(20, end), blink .5s step-end infinite;
+  }
+  @keyframes typing { from { width: 0 } to { width: 100% } }
+  @keyframes blink { from, to { border-color: transparent } 50% { border-color: var(--theme-color); } }
 
   body {
     margin: 0; padding: 0; width: 100vw; height: 100vh;
-    font-family: var(--font-main);
+    font-family: 'Courier New', Courier, monospace;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     background-color: var(--bg-color);
     overflow: hidden; color: var(--text-color);
     perspective: 1200px; cursor: crosshair; user-select: none;
-    transition: all 0.5s ease;
   }
-  body:active { cursor: grabbing; }
 
-  /* --- CANVAS & BACKGROUNDS --- */
-  #canvas-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; display: var(--canvas-display); }
-  
+  #canvas-bg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0; }
   .scanlines {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
     background-size: 100% 4px; pointer-events: none; z-index: 1;
-    display: var(--scanline-display);
   }
 
-  .css-background {
-    position: absolute; top: 0; left: 0; width: 100vw; height: 100vh;
-    z-index: 0; display: var(--css-bg-display); pointer-events: none;
-  }
-
-  /* --- THEME OVERRIDES --- */
-  
-  /* 1. BRUTALISM */
-  body.theme-brutalism {
-    --bg-color: #f0f0f0; --text-color: #000;
-    --font-main: 'Impact', 'Arial Black', sans-serif;
-    --panel-bg: #fff; --panel-border: 4px solid #000; --panel-radius: 0px;
-    --panel-shadow: 12px 12px 0px #000;
-    --title-shadow: 4px 4px 0px #ff003c;
-    --btn-bg: #fff; --btn-border: 3px solid #000; --btn-radius: 0px;
-    --btn-hover-scale: translate(-4px, -4px);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #ff003c; --splash-color: #000;
-  }
-  body.theme-brutalism .place-btn { color: #000; box-shadow: 4px 4px 0px #000; }
-  body.theme-brutalism .place-btn:hover { box-shadow: 8px 8px 0px var(--theme-color); border-color: var(--theme-color); }
-  body.theme-brutalism .glass-panel { backdrop-filter: none; }
-
-  /* 2. MATCHA */
-  body.theme-matcha {
-    --bg-color: #f4efe6; --text-color: #4a5d23;
-    --font-main: 'Trebuchet MS', 'Lucida Sans Unicode', sans-serif;
-    --panel-bg: rgba(255, 255, 255, 0.7); --panel-border: 1px solid rgba(255,255,255,0.8);
-    --panel-radius: 40px; --panel-shadow: 0 20px 40px rgba(74, 93, 35, 0.1);
-    --title-shadow: none;
-    --btn-bg: #e8ecd7; --btn-border: 1px solid transparent; --btn-radius: 30px;
-    --btn-hover-scale: scale(1.03);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #8da35c; --splash-color: #d4a373;
-  }
-  body.theme-matcha .place-btn { color: #4a5d23; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-  body.theme-matcha .place-btn:hover { background: #fff; box-shadow: 0 10px 20px rgba(141,163,92,0.2); }
-  body.theme-matcha h1 { letter-spacing: 4px; font-weight: 700; color: #4a5d23; }
-  body.theme-matcha h1:hover { letter-spacing: 6px; }
-
-  /* 3. AERO */
-  body.theme-aero {
-    --bg-color: #0078d7; --text-color: #fff;
-    --font-main: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    --panel-bg: linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%);
-    --panel-border: 1px solid rgba(255,255,255,0.6); --panel-radius: 12px;
-    --panel-shadow: 0 8px 32px rgba(0,0,0,0.3), inset 0 2px 2px rgba(255,255,255,0.8);
-    --title-shadow: 0 2px 4px rgba(0,0,0,0.5);
-    --btn-bg: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
-    --btn-border: 1px solid rgba(255,255,255,0.5); --btn-radius: 8px;
-    --btn-hover-scale: scale(1.02);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #00ffcc; --splash-color: #a4ff00;
-  }
-  body.theme-aero .place-btn { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
-  body.theme-aero .place-btn:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.6); }
-
-  /* 4. VAPORWAVE */
-  body.theme-vaporwave {
-    --bg-color: #0a0e27; --text-color: #ff006e;
-    --font-main: 'Arial', sans-serif;
-    --panel-bg: rgba(20, 0, 40, 0.6); --panel-border: 2px solid #ff006e;
-    --panel-radius: 20px; --panel-shadow: 0 20px 60px rgba(255, 0, 110, 0.3), inset 0 0 20px rgba(255,255,255,0.05);
-    --title-shadow: 0 0 20px #ff006e, 0 0 40px #00d4ff;
-    --btn-bg: rgba(255, 0, 110, 0.1); --btn-border: 1px solid #ff006e; --btn-radius: 15px;
-    --btn-hover-scale: scale(1.05);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #ff006e; --splash-color: #00d4ff;
-  }
-  body.theme-vaporwave .place-btn { color: #ff006e; box-shadow: 0 0 20px rgba(255, 0, 110, 0.5); }
-  body.theme-vaporwave .place-btn:hover { background: rgba(255, 0, 110, 0.2); box-shadow: 0 0 30px #ff006e, inset 0 0 20px rgba(0, 212, 255, 0.2); }
-  body.theme-vaporwave h1 { color: #ff006e; text-shadow: 0 0 20px #ff006e, 0 0 40px #00d4ff; }
-
-  /* 5. CYBERPUNK */
-  body.theme-cyberpunk {
-    --bg-color: #0d0221; --text-color: #00ff41;
-    --font-main: 'Courier New', monospace;
-    --panel-bg: rgba(0, 0, 0, 0.8); --panel-border: 2px solid #00ff41;
-    --panel-radius: 0px; --panel-shadow: 0 0 30px #00ff41, inset 0 0 20px rgba(0, 255, 65, 0.1);
-    --title-shadow: 0 0 10px #00ff41, 0 0 20px #ff006e;
-    --btn-bg: rgba(0, 255, 65, 0.05); --btn-border: 1px solid #00ff41; --btn-radius: 2px;
-    --btn-hover-scale: scale(1.02);
-    --canvas-display: block; --scanline-display: block;
-    --theme-color: #00ff41; --splash-color: #ff006e;
-  }
-  body.theme-cyberpunk .place-btn { color: #00ff41; text-shadow: 0 0 10px #00ff41; }
-  body.theme-cyberpunk .place-btn:hover { box-shadow: 0 0 15px #00ff41; background: rgba(0, 255, 65, 0.1); }
-
-  /* 6. ETHEREAL */
-  body.theme-ethereal {
-    --bg-color: #1a1a2e; --text-color: #e0e0ff;
-    --font-main: 'Georgia', serif;
-    --panel-bg: rgba(200, 150, 255, 0.1); --panel-border: 1px solid rgba(200, 150, 255, 0.3);
-    --panel-radius: 30px; --panel-shadow: 0 20px 60px rgba(200, 150, 255, 0.2), inset 0 0 30px rgba(255, 255, 255, 0.05);
-    --title-shadow: 0 0 30px rgba(200, 150, 255, 0.6);
-    --btn-bg: rgba(200, 150, 255, 0.1); --btn-border: 1px solid rgba(200, 150, 255, 0.3); --btn-radius: 20px;
-    --btn-hover-scale: scale(1.05);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #c896ff; --splash-color: #ffb6ff;
-  }
-  body.theme-ethereal .place-btn { color: #e0e0ff; box-shadow: 0 0 15px rgba(200, 150, 255, 0.3); }
-  body.theme-ethereal .place-btn:hover { background: rgba(200, 150, 255, 0.2); box-shadow: 0 0 25px rgba(200, 150, 255, 0.6); }
-
-  /* 7. RETRO */
-  body.theme-retro {
-    --bg-color: #2d1b00; --text-color: #ffeb3b;
-    --font-main: 'Courier New', monospace;
-    --panel-bg: rgba(0, 0, 0, 0.7); --panel-border: 3px solid #ffeb3b;
-    --panel-radius: 5px; --panel-shadow: 8px 8px 0px rgba(0, 0, 0, 0.5);
-    --title-shadow: 3px 3px 0px rgba(0, 0, 0, 0.8);
-    --btn-bg: #ffeb3b; --btn-border: 2px solid #000; --btn-radius: 3px;
-    --btn-hover-scale: translate(-2px, -2px);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #ffeb3b; --splash-color: #ff6e40;
-  }
-  body.theme-retro .place-btn { color: #000; box-shadow: 3px 3px 0px #000; }
-  body.theme-retro .place-btn:hover { box-shadow: 6px 6px 0px #000; }
-  body.theme-retro h1 { color: #ffeb3b; text-shadow: 3px 3px 0px #000; }
-
-  /* 8. COSMIC */
-  body.theme-cosmic {
-    --bg-color: #0a0e27; --text-color: #64b5ff;
-    --font-main: 'Arial', sans-serif;
-    --panel-bg: rgba(30, 20, 80, 0.4); --panel-border: 1px solid rgba(100, 181, 255, 0.4);
-    --panel-radius: 25px; --panel-shadow: 0 20px 60px rgba(100, 181, 255, 0.2), inset 0 0 20px rgba(255, 200, 87, 0.05);
-    --title-shadow: 0 0 20px #64b5ff;
-    --btn-bg: rgba(100, 181, 255, 0.1); --btn-border: 1px solid rgba(100, 181, 255, 0.4); --btn-radius: 12px;
-    --btn-hover-scale: scale(1.04);
-    --canvas-display: block; --scanline-display: none;
-    --theme-color: #64b5ff; --splash-color: #ffc857;
-  }
-  body.theme-cosmic .place-btn { color: #64b5ff; box-shadow: 0 0 15px rgba(100, 181, 255, 0.3); }
-  body.theme-cosmic .place-btn:hover { background: rgba(100, 181, 255, 0.15); box-shadow: 0 0 25px rgba(100, 181, 255, 0.6); }
-
-  /* --- UI ELEMENTS --- */
   .glass-panel {
     position: relative; z-index: 2;
-    background: var(--panel-bg);
-    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-    border: var(--panel-border); border-radius: var(--panel-radius);
-    padding: 40px; width: 750px; max-width: 90%;
+    background: var(--panel-bg); 
+    backdrop-filter: blur(12px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 16px; padding: 40px; width: 750px; max-width: 90%;
     display: flex; flex-direction: column; align-items: center;
-    box-shadow: var(--panel-shadow);
-    transition: transform 0.1s ease-out, all 0.4s ease; transform-style: preserve-3d;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.9);
   }
 
-  .title-wrapper { position: relative; margin: 0 0 40px 0; display: flex; flex-direction: column; align-items: center; }
+  h1 { margin: 0; font-weight: 900; letter-spacing: 12px; font-size: 3.5rem; text-shadow: 0 0 15px var(--theme-color); }
 
-  .top-warning {
-    margin-top: 15px; font-size: 13px; color: var(--theme-color);
-    text-align: center; text-transform: uppercase; letter-spacing: 1.5px; font-weight: bold;
-  }
-
-  h1 {
-    margin: 0; font-weight: 900; letter-spacing: 12px; font-size: 4.5rem; 
-    color: var(--text-color); text-transform: uppercase; text-align: center;
-    text-shadow: var(--title-shadow); transition: all 0.3s ease; cursor: pointer;
-  }
-  h1:hover { transform: scale(1.02); }
-
-  .splash-quote {
-    position: absolute; top: -15px; right: -80px; 
-    color: var(--splash-color); font-weight: 900; font-size: 18px; 
-    transform: rotate(-15deg); pointer-events: auto; cursor: crosshair;
-    animation: splashBounce 0.4s infinite alternate ease-in-out; white-space: nowrap; transition: transform 0.2s;
-  }
-  @keyframes splashBounce { 0% { transform: scale(1) rotate(-15deg); } 100% { transform: scale(1.05) rotate(-15deg); } }
-
-  .grid-container {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px;
-    width: 100%; max-height: 55vh; overflow-y: auto; padding: 10px; transform: translateZ(25px);
-  }
-  .grid-container::-webkit-scrollbar { width: 0; }
-
-  .place-btn {
-    background: var(--btn-bg); border: var(--btn-border); color: var(--text-color);
-    padding: 18px; font-size: 18px; font-family: inherit; font-weight: bold;
-    letter-spacing: 2px; cursor: crosshair; border-radius: var(--btn-radius);
-    transition: all 0.2s ease-out; position: relative; display: flex;
-    align-items: center; justify-content: center; flex-direction: column; overflow: hidden;
-  }
-  .place-btn > * { position: relative; z-index: 1; }
-  .place-btn:hover { transform: var(--btn-hover-scale); }
-
-  .mini-label { font-size: 11px; margin-bottom: 5px; letter-spacing: 1px; animation: pulseBadge 1.5s infinite alternate ease-in-out; }
-  @keyframes pulseBadge { 0% { opacity: 0.7; } 100% { opacity: 1; } }
-
-  .status-working { font-size: 11px; margin-top: 6px; letter-spacing: 1px; font-weight: normal; opacity: 0.6; }
-  .place-btn:hover .status-working { opacity: 1; }
-
-  /* --- GOOGLE DOC LINK --- */
-  .gdoc-button {
-    position: fixed; top: 25px; left: 25px; z-index: 20;
-    background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2);
-    color: var(--text-color); padding: 10px 15px; border-radius: 12px;
-    font-size: 12px; font-weight: bold; cursor: pointer; text-transform: uppercase;
-    letter-spacing: 0.5px; transition: all 0.2s; backdrop-filter: blur(10px);
-  }
-  .gdoc-button:hover { background: var(--theme-color); color: #000; box-shadow: 0 0 15px var(--theme-color); }
-  .gdoc-label { font-size: 9px; opacity: 0.7; display: block; margin-bottom: 3px; }
-
-  /* --- SLEEK THEME SELECTOR --- */
+  /* THEMES NAV */
   .theme-selector {
-    position: fixed; top: 25px; right: 25px; z-index: 20; display: flex; gap: 4px;
-    background: rgba(0, 0, 0, 0.3); padding: 8px 10px; border-radius: 20px;
-    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
-    flex-wrap: wrap; max-width: 300px;
+    display: flex; gap: 10px; margin-bottom: 20px; z-index: 5;
   }
+  .theme-dot {
+    width: 20px; height: 20px; border-radius: 50%; border: 2px solid #fff; cursor: pointer; transition: transform 0.2s;
+  }
+  .theme-dot:hover { transform: scale(1.3); }
+
+  /* CHAT: THE BAKERY */
+  #bakery-chat {
+    position: fixed; bottom: 20px; right: 20px; width: 300px; height: 400px;
+    background: rgba(0,0,0,0.8); border: 1px solid var(--theme-color);
+    border-radius: 8px; display: flex; flex-direction: column; z-index: 100;
+    box-shadow: 0 0 20px var(--theme-color);
+    transition: transform 0.3s ease;
+  }
+  .chat-header { background: var(--theme-color); color: #000; padding: 5px 10px; font-weight: bold; cursor: pointer; display: flex; justify-content: space-between; }
+  #chat-messages { flex: 1; overflow-y: auto; padding: 10px; font-size: 12px; display: flex; flex-direction: column; gap: 5px; }
+  .chat-input-area { display: flex; border-top: 1px solid #444; }
+  #chat-input { background: transparent; border: none; color: white; padding: 10px; flex: 1; outline: none; }
   
-  .theme-btn-sel {
-    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.5);
-    padding: 5px 8px; font-family: inherit; font-size: 10px; font-weight: bold; cursor: pointer;
-    border-radius: 10px; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px;
+  .grid-container { display: grid; grid-template-columns: repeat(2, 1fr); gap: 15px; width: 100%; margin-top: 20px; }
+  .place-btn {
+    background: rgba(0, 0, 0, 0.6); border: 1px solid var(--theme-color);
+    color: #e0e0e0; padding: 18px; font-size: 18px; font-weight: bold;
+    cursor: crosshair; border-radius: 8px; transition: all 0.3s;
   }
-  .theme-btn-sel:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.4); }
-  .theme-btn-sel.active { background: var(--theme-color); color: #000; box-shadow: 0 0 12px var(--theme-color); border-color: var(--theme-color); }
-
-  /* --- BAKERY CHAT --- */
-  .bakery-fab {
-    position: fixed; bottom: 25px; right: 25px; z-index: 20;
-    width: 50px; height: 50px; border-radius: 50%; background: var(--theme-color); color: #000;
-    border: none; cursor: pointer; font-weight: bold; font-size: 22px; display: flex;
-    align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-  }
-  .bakery-fab:hover { transform: scale(1.1); box-shadow: 0 6px 20px var(--theme-color); }
-
-  .bakery-panel {
-    position: fixed; bottom: 25px; right: 25px; z-index: 19;
-    width: 350px; height: 500px; background: var(--panel-bg);
-    backdrop-filter: blur(12px); border: var(--panel-border); border-radius: var(--panel-radius);
-    box-shadow: var(--panel-shadow); display: flex; flex-direction: column;
-    transform: scale(0.95) translateY(20px); opacity: 0; pointer-events: none; transition: all 0.3s ease;
-  }
-
-  .bakery-panel.open {
-    transform: scale(1) translateY(0); opacity: 1; pointer-events: auto;
-  }
-
-  .bakery-header {
-    padding: 15px; border-bottom: var(--panel-border);
-    display: flex; justify-content: space-between; align-items: center;
-  }
-
-  .bakery-title { font-size: 15px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; }
-  .bakery-online { font-size: 10px; color: var(--theme-color); letter-spacing: 0.5px; margin-top: 3px; }
-
-  .bakery-close { background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px; opacity: 0.6; transition: opacity 0.2s; }
-  .bakery-close:hover { opacity: 1; }
-
-  .bakery-chat {
-    flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;
-  }
-  .bakery-chat::-webkit-scrollbar { width: 4px; }
-  .bakery-chat::-webkit-scrollbar-track { background: transparent; }
-  .bakery-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
-
-  .chat-msg {
-    padding: 8px 12px; border-radius: 8px; font-size: 12px; line-height: 1.4;
-    word-wrap: break-word; animation: msgSlideIn 0.3s ease;
-  }
-  @keyframes msgSlideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-  .chat-msg.other { background: rgba(255,255,255,0.08); color: var(--text-color); }
-  .chat-msg.self { background: var(--theme-color); color: #000; margin-left: auto; max-width: 85%; text-align: right; }
-  .chat-msg.system { background: rgba(0,255,255,0.1); color: var(--theme-color); text-align: center; font-size: 10px; margin: 5px 0; }
-
-  .chat-name { font-size: 10px; opacity: 0.7; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
-
-  .bakery-input-area {
-    padding: 12px; border-top: var(--panel-border); display: flex; gap: 8px;
-  }
-
-  .bakery-name-input, .bakery-msg-input {
-    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color);
-    padding: 8px 10px; border-radius: 6px; font-family: inherit; font-size: 11px;
-    transition: all 0.2s; flex: 1;
-  }
-
-  .bakery-name-input::placeholder, .bakery-msg-input::placeholder { color: rgba(255,255,255,0.3); }
-  .bakery-name-input:focus, .bakery-msg-input:focus { outline: none; border-color: var(--theme-color); background: rgba(0,0,0,0.5); }
-
-  .bakery-send {
-    background: var(--theme-color); border: none; color: #000; cursor: pointer;
-    padding: 8px 12px; border-radius: 6px; font-weight: bold; font-family: inherit; font-size: 11px;
-    transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
-  }
-  .bakery-send:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--theme-color); }
-  .bakery-send:active { transform: scale(0.95); }
-
+  .place-btn:hover { background: var(--theme-color); color: #000; box-shadow: 0 0 20px var(--theme-color); }
+  
+  .minimized { transform: translateY(365px); }
 </style>
 </head>
-<body class="theme-default">
+<body>
+
+  <div id="boot-screen">
+    <div class="boot-text">INITIALIZING_COMPILATION...</div>
+  </div>
 
   <canvas id="canvas-bg"></canvas>
   <div class="scanlines"></div>
-  <div class="css-background"></div>
 
-  <!-- Google Doc Link -->
-  <a href="#" id="gdoc-link" class="gdoc-button">
-    <span class="gdoc-label">📄 Personal</span>
-    OPEN DOC
-  </a>
-
-  <!-- Theme Selector -->
   <div class="theme-selector">
-    <button class="theme-btn-sel active" data-theme="default">NEON</button>
-    <button class="theme-btn-sel" data-theme="brutalism">BRUTAL</button>
-    <button class="theme-btn-sel" data-theme="matcha">MATCHA</button>
-    <button class="theme-btn-sel" data-theme="aero">AERO</button>
-    <button class="theme-btn-sel" data-theme="vaporwave">VAPOR</button>
-    <button class="theme-btn-sel" data-theme="cyberpunk">CYBER</button>
-    <button class="theme-btn-sel" data-theme="ethereal">ETHRL</button>
-    <button class="theme-btn-sel" data-theme="retro">RETRO</button>
-    <button class="theme-btn-sel" data-theme="cosmic">COSMIC</button>
+    <div class="theme-dot" style="background:#00ffff" onclick="setTheme('cyber')"></div>
+    <div class="theme-dot" style="background:#ff0044" onclick="setTheme('lava')"></div>
+    <div class="theme-dot" style="background:#39ff14" onclick="setTheme('matrix')"></div>
+    <div class="theme-dot" style="background:#ff00ff" onclick="setTheme('synth')"></div>
+    <div class="theme-dot" style="background:#ffd700" onclick="setTheme('gold')"></div>
+    <div class="theme-dot" style="background:#007fff" onclick="setTheme('deepsea')"></div>
   </div>
 
-  <!-- Main Panel -->
   <div class="glass-panel" id="tilt-panel">
-    <div class="title-wrapper">
-      <h1 id="main-title">COMPILATION</h1>
-      <div class="splash-quote" id="splash-text"></div>
-      <div class="top-warning">if you visit these sites without using compilation they wont work</div>
-    </div>
+    <h1>COMPILATION</h1>
     <div class="grid-container" id="menu"></div>
   </div>
 
-  <!-- Bakery Chat Button -->
-  <button class="bakery-fab" id="bakery-fab">🥐</button>
-
-  <!-- Bakery Chat Panel -->
-  <div class="bakery-panel" id="bakery-panel">
-    <div class="bakery-header">
-      <div>
-        <div class="bakery-title">THE BAKERY</div>
-        <div class="bakery-online" id="online-count">Connecting...</div>
-      </div>
-      <button class="bakery-close" id="bakery-close">✕</button>
+  <!-- THE BAKERY CHAT -->
+  <div id="bakery-chat" class="minimized">
+    <div class="chat-header" onclick="toggleChat()">
+      <span>THE BAKERY</span>
+      <span id="chat-toggle-btn">+</span>
     </div>
-    <div class="bakery-chat" id="bakery-chat"></div>
-    <div class="bakery-input-area">
-      <input type="text" id="bakery-name" class="bakery-name-input" placeholder="Name" maxlength="20">
-      <input type="text" id="bakery-msg" class="bakery-msg-input" placeholder="Say something...">
-      <button class="bakery-send" id="bakery-send">→</button>
+    <div id="chat-messages"></div>
+    <div class="chat-input-area">
+      <input type="text" id="chat-input" placeholder="Say something..." maxlength="100">
     </div>
   </div>
 
   <script>
-    // --- GOOGLE DOC LINK (HEX ENCODED) ---
-    const gdocLink = document.getElementById('gdoc-link');
-    // Hex encoded: https://docs.google.com/document/d/1iDehFI9TeIEl_-IdrEXYZr78-z1PNOmiu4IGfLsCqc4/edit?tab=t.9lp8fxxh3yw
-    const decodedUrl = '68747470733a2f2f646f63732e676f6f676c652e636f6d2f646f63756d656e742f642f31694465684649395465494c5f2d496472455859527237382d7a31504e4f6d69753449476653436634342f656469743f7461623d742e396c7038667878683379772f';
-    let url = '';
-    for (let i = 0; i < decodedUrl.length; i += 2) {
-      url += String.fromCharCode(parseInt(decodedUrl.substr(i, 2), 16));
-    }
-    gdocLink.href = url;
-    gdocLink.target = '_blank';
-
-    // --- THEME SYSTEM ---
-    let currentTheme = 'default';
-    const themeButtons = document.querySelectorAll('.theme-btn-sel');
-    
-    themeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        themeButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        currentTheme = btn.dataset.theme;
-        document.body.className = `theme-${currentTheme}`;
-        localStorage.setItem('preferredTheme', currentTheme);
-      });
+    // 1. STARTUP ANIMATION
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('boot-screen').style.opacity = '0';
+        setTimeout(() => document.getElementById('boot-screen').remove(), 500);
+      }, 1200);
     });
 
-    const savedTheme = localStorage.getItem('preferredTheme') || 'default';
-    document.body.className = `theme-${savedTheme}`;
-    document.querySelector(`[data-theme="${savedTheme}"]`).&& document.querySelector(`[data-theme="${savedTheme}"]`).classList.add('active');
-    currentTheme = savedTheme;
+    // 2. THEMES CONFIG
+    const themes = {
+      cyber: { color: '#00ffff', bg: '#05010a' },
+      lava: { color: '#ff0044', bg: '#0a0101' },
+      matrix: { color: '#39ff14', bg: '#010a02' },
+      synth: { color: '#ff00ff', bg: '#0a010a' },
+      gold: { color: '#ffd700', bg: '#0a0801' },
+      deepsea: { color: '#007fff', bg: '#01050a' }
+    };
 
-    const quotes = ["100% legal", "RIP Sweet Tea", "JC>CC", "T-cubed", "Lafayette B.", "BLEHELEHEHHEEHH"];
-    document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+    function setTheme(name) {
+      const t = themes[name];
+      document.documentElement.style.setProperty('--theme-color', t.color);
+      document.documentElement.style.setProperty('--bg-color', t.bg);
+      globalHue = getHueFromHex(t.color);
+    }
 
+    function getHueFromHex(hex) {
+        var r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+        var max = Math.max(r, g, b), min = Math.min(r, g, b);
+        var h, s, l = (max + min) / 2;
+        if(max == min){ h = s = 0; }
+        else {
+            var d = max - min;
+            s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+            switch(max){
+                case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+                case g: h = (b - r) / d + 2; break;
+                case b: h = (r - g) / d + 4; break;
+            }
+            h /= 6;
+        }
+        return h * 360;
+    }
+
+    // 3. PLACES (Filtered to 04 and 05)
     const places = [
-      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", isFavorite: true },
-      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", isClassic: true }
+      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576" },
+      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f" }
     ];
 
     const menu = document.getElementById('menu');
-    const panel = document.getElementById('tilt-panel');
-
     places.forEach(p => {
       const btn = document.createElement('button');
       btn.className = 'place-btn';
-      let topLabel = '';
-      if (p.isFavorite) topLabel = `<span class="mini-label" style="color: inherit;">★ FAVORITE ★</span>`;
-      else if (p.isClassic) topLabel = `<span class="mini-label" style="color: inherit;">⚙️ CLASSIC ⚙️</span>`;
-      btn.innerHTML = `${topLabel}<span>${p.label}</span><span class="status-working">working</span>`;
-      btn.onclick = () => initSession(p.hex);
+      btn.innerText = p.label;
+      btn.onclick = () => {
+        let u = '';
+        for (let i = 0; i < p.hex.length; i += 2) u += String.fromCharCode(parseInt(p.hex.substr(i, 2), 16));
+        window.open(u, '_blank');
+      };
       menu.appendChild(btn);
     });
 
-    document.addEventListener('mousemove', (e) => {
-      let xAxis = (window.innerWidth / 2 - e.pageX) / 150; 
-      let yAxis = (window.innerHeight / 2 - e.pageY) / -150;
-      panel.style.transform = `rotateY(${xAxis}deg) rotateX(${yAxis}deg)`;
-    });
-    
-    document.addEventListener('mouseleave', () => { panel.style.transform = `rotateY(0deg) rotateX(0deg)`; });
-
-    function initSession(h) {
-      let u = '';
-      for (let i = 0; i < h.length; i += 2) u += String.fromCharCode(parseInt(h.substr(i, 2), 16));
-      const target = `${u}?session=${Math.floor(Math.random() * 100000)}`;
-      const w = window.open('about:blank', '_blank');
-      if (w) {
-        w.document.write(`<style>body{margin:0;padding:0;background:#000;}</style><iframe src="${target}" style="width:100vw;height:100vh;border:none;"></iframe>`);
-        w.document.close();
-      }
+    // 4. THE BAKERY CHAT LOGIC
+    function toggleChat() {
+      const chat = document.getElementById('bakery-chat');
+      const btn = document.getElementById('chat-toggle-btn');
+      chat.classList.toggle('minimized');
+      btn.innerText = chat.classList.contains('minimized') ? '+' : '-';
     }
 
-    // --- BAKERY GLOBAL CHAT (FIXED WITH SIMPLER APPROACH) ---
-    const bakeryPanel = document.getElementById('bakery-panel');
-    const bakeryFab = document.getElementById('bakery-fab');
-    const bakeryClose = document.getElementById('bakery-close');
-    const bakerySend = document.getElementById('bakery-send');
-    const bakeryChat = document.getElementById('bakery-chat');
-    const bakeryNameInput = document.getElementById('bakery-name');
-    const bakeryMsgInput = document.getElementById('bakery-msg');
-    const onlineCount = document.getElementById('online-count');
+    // --- FIREBASE CONFIGURATION ---
+    // TO MAKE CHAT WORK: 
+    // 1. Go to firebase.google.com, create a project.
+    // 2. Enable "Realtime Database" and set rules to: { ".read": true, ".write": true } (for testing).
+    // 3. Replace the config below with yours.
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      databaseURL: "YOUR_DATABASE_URL",
+      projectId: "YOUR_PROJECT_ID",
+    };
 
-    let userName = localStorage.getItem('bakeryName') || 'Anonymous';
-    let userId = 'user_' + Math.random().toString(36).substr(2, 9);
-    let isConnected = false;
+    // Only initialize if keys are provided
+    if(firebaseConfig.apiKey !== "YOUR_API_KEY") {
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const chatRef = db.ref("messages");
 
-    if (userName) bakeryNameInput.value = userName;
-
-    bakeryFab.addEventListener('click', () => {
-      bakeryPanel.classList.toggle('open');
-      if (bakeryPanel.classList.contains('open')) {
-        bakeryMsgInput.focus();
-        bakeryChat.scrollTop = bakeryChat.scrollHeight;
-        loadChatHistory();
-      }
-    });
-
-    bakeryClose.addEventListener('click', () => bakeryPanel.classList.remove('open'));
-
-    function addChatMessage(name, msg, isOther = true) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `chat-msg ${isOther ? 'other' : 'self'}`;
-      msgDiv.innerHTML = `<div class="chat-name">${name}</div>${msg}`;
-      bakeryChat.appendChild(msgDiv);
-      bakeryChat.scrollTop = bakeryChat.scrollHeight;
-    }
-
-    function loadChatHistory() {
-      const history = JSON.parse(localStorage.getItem('bakery_messages') || '[]');
-      if (bakeryChat.children.length === 0) {
-        history.slice(-15).forEach(msg => {
-          addChatMessage(msg.name, msg.text, true);
+        document.getElementById('chat-input').addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && e.target.value.trim() !== "") {
+            chatRef.push({
+              msg: e.target.value,
+              ts: Date.now()
+            });
+            e.target.value = "";
+          }
         });
-      }
-      updateOnlineStatus();
+
+        chatRef.limitToLast(20).on("child_added", (snap) => {
+          const data = snap.val();
+          const div = document.createElement('div');
+          div.innerHTML = `<span style="color:var(--theme-color)">[Anonymous]:</span> ${data.msg}`;
+          const box = document.getElementById('chat-messages');
+          box.appendChild(div);
+          box.scrollTop = box.scrollHeight;
+        });
+    } else {
+        document.getElementById('chat-messages').innerHTML = "Set up Firebase keys to enable The Bakery.";
     }
 
-    function updateOnlineStatus() {
-      const sessions = JSON.parse(localStorage.getItem('bakery_sessions') || '{}');
-      const now = Date.now();
-      let activeCount = 0;
-      for (let id in sessions) {
-        if (now - sessions[id] < 30000) activeCount++;
-      }
-      onlineCount.textContent = `${activeCount} online`;
-      isConnected = true;
-    }
-
-    function registerSession() {
-      const sessions = JSON.parse(localStorage.getItem('bakery_sessions') || '{}');
-      sessions[userId] = Date.now();
-      localStorage.setItem('bakery_sessions', JSON.stringify(sessions));
-    }
-
-    function sendMessage() {
-      const name = bakeryNameInput.value.trim() || 'Anonymous';
-      const msg = bakeryMsgInput.value.trim();
-      
-      if (!msg) return;
-
-      userName = name;
-      localStorage.setItem('bakeryName', name);
-      bakeryNameInput.value = name;
-      bakeryMsgInput.value = '';
-
-      addChatMessage(name, msg, false);
-
-      let messages = JSON.parse(localStorage.getItem('bakery_messages') || '[]');
-      messages.push({ name, text: msg, id: userId, timestamp: Date.now() });
-      messages = messages.slice(-50);
-      localStorage.setItem('bakery_messages', JSON.stringify(messages));
-
-      registerSession();
-      updateOnlineStatus();
-    }
-
-    bakerySend.addEventListener('click', sendMessage);
-    bakeryMsgInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
-    });
-
-    // Register session and update online count periodically
-    registerSession();
-    setInterval(() => {
-      registerSession();
-      updateOnlineStatus();
-    }, 5000);
-
-    updateOnlineStatus();
-    onlineCount.textContent = 'Ready';
-
-    // --- ANIMATION SYSTEM ---
+    // 5. PARTICLE SYSTEM (Original Physics Maintained)
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
     let globalHue = 180;
-    let animationTime = 0;
-
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth; canvas.height = window.innerHeight;
 
     class Particle {
       constructor(x, y, vx, vy, size) {
-        this.x = x;
-        this.y = y;
-        this.vx = vx;
-        this.vy = vy;
-        this.size = size;
-        this.hueOffset = (Math.random() * 40) - 20;
-      }
-      draw() {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        let myHue = globalHue + this.hueOffset;
-        ctx.fillStyle = `hsl(${myHue}, 100%, 50%)`;
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = ctx.fillStyle;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        this.x = x; this.y = y; this.vx = vx; this.vy = vy;
+        this.baseVx = vx; this.baseVy = vy; this.size = size;
       }
       update() {
-        if (this.x + this.size > canvas.width || this.x - this.size < 0) this.vx = -this.vx;
-        if (this.y + this.size > canvas.height || this.y - this.size < 0) this.vy = -this.vy;
-        this.x += this.vx;
-        this.y += this.vy;
-        this.draw();
+        if (this.x > canvas.width || this.x < 0) this.vx = -this.vx;
+        if (this.y > canvas.height || this.y < 0) this.vy = -this.vy;
+        this.x += this.vx; this.y += this.vy;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `hsl(${globalHue}, 100%, 50%)`;
+        ctx.fill();
       }
     }
 
-    function initParticles() {
+    function init() {
       particlesArray = [];
-      let numberOfParticles = (canvas.height * canvas.width) / 8000;
-      for (let i = 0; i < numberOfParticles; i++) {
-        let size = (Math.random() * 3) + 2;
-        particlesArray.push(new Particle(
-          Math.random() * (innerWidth - size * 2) + size,
-          Math.random() * (innerHeight - size * 2) + size,
-          (Math.random() * 2) - 1,
-          (Math.random() * 2) - 1,
-          size
-        ));
-      }
-    }
-
-    function connectParticles() {
-      for (let a = 0; a < particlesArray.length; a++) {
-        for (let b = a; b < particlesArray.length; b++) {
-          let distance = (particlesArray[a].x - particlesArray[b].x) ** 2 + (particlesArray[a].y - particlesArray[b].y) ** 2;
-          if (distance < 15000) {
-            ctx.strokeStyle = `hsla(${globalHue}, 100%, 60%, ${1 - (distance / 15000)})`;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
-            ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
-            ctx.stroke();
-          }
-        }
+      for (let i = 0; i < 100; i++) {
+        particlesArray.push(new Particle(Math.random()*canvas.width, Math.random()*canvas.height, Math.random()*2-1, Math.random()*2-1, 2));
       }
     }
 
     function animate() {
+      ctx.fillStyle = 'rgba(5, 1, 10, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      particlesArray.forEach(p => p.update());
       requestAnimationFrame(animate);
-      animationTime++;
-
-      if (currentTheme === 'default') {
-        globalHue += 0.15;
-        if (globalHue >= 360) globalHue = 0;
-        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
-        ctx.fillStyle = 'rgba(5, 1, 10, 0.15)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        for (let i = 0; i < particlesArray.length; i++) particlesArray[i].update();
-        connectParticles();
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
     }
-
-    window.addEventListener('resize', () => {
-      canvas.width = innerWidth;
-      canvas.height = innerHeight;
-    });
-
-    initParticles();
-    animate();
+    init(); animate();
   </script>
 </body>
 </html>
