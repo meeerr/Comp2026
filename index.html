@@ -4,12 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>COMPILATION</title>
-<!-- GunDB CDN for serverless real-time global chat across devices -->
-<script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
+<!-- Rock-solid Realtime WebSockets for Cross-Device Global Chat -->
+<script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 <style>
   :root {
     --theme-color: #00ffff;
-    --theme-bg-tint: rgba(5, 2, 10, 0.3);
+    --theme-bg: #05010a;
+    --panel-bg: rgba(5, 2, 10, 0.35);
     --cyan: #00e5ff;
     --lime: #39ff14;
     --gold: #ffd700;
@@ -23,14 +24,37 @@
     --purple-haze: #7f00ff;
   }
 
-  /* Preset Themes */
-  body[data-theme="dynamic"] { --theme-color: #00ffff; }
-  body[data-theme="synthwave"] { --theme-color: #ff00aa; --theme-bg-tint: rgba(20, 0, 30, 0.4); }
-  body[data-theme="crimson"] { --theme-color: #ff073a; --theme-bg-tint: rgba(30, 0, 5, 0.4); }
-  body[data-theme="matrix"] { --theme-color: #39ff14; --theme-bg-tint: rgba(0, 20, 5, 0.4); }
-  body[data-theme="abyss"] { --theme-color: #00e5ff; --theme-bg-tint: rgba(0, 15, 30, 0.4); }
-  body[data-theme="solar"] { --theme-color: #ffd700; --theme-bg-tint: rgba(30, 20, 0, 0.4); }
-  body[data-theme="nebula"] { --theme-color: #9d00ff; --theme-bg-tint: rgba(18, 0, 32, 0.4); }
+  /* Distinct visual vibes for themes */
+  body[data-theme="matrix"] {
+    --theme-color: #39ff14;
+    --theme-bg: #000a02;
+    --panel-bg: rgba(0, 20, 5, 0.5);
+  }
+  body[data-theme="synthwave"] {
+    --theme-color: #ff00aa;
+    --theme-bg: #0d001a;
+    --panel-bg: rgba(25, 0, 35, 0.45);
+  }
+  body[data-theme="blackhole"] {
+    --theme-color: #ff7700;
+    --theme-bg: #020205;
+    --panel-bg: rgba(10, 5, 15, 0.45);
+  }
+  body[data-theme="cyberpunk"] {
+    --theme-color: #00e5ff;
+    --theme-bg: #040814;
+    --panel-bg: rgba(2, 12, 28, 0.5);
+  }
+  body[data-theme="hyperspace"] {
+    --theme-color: #7f00ff;
+    --theme-bg: #010008;
+    --panel-bg: rgba(8, 0, 20, 0.5);
+  }
+  body[data-theme="vapor"] {
+    --theme-color: #ff71ce;
+    --theme-bg: #0b001a;
+    --panel-bg: rgba(20, 5, 30, 0.45);
+  }
 
   body {
     margin: 0;
@@ -42,17 +66,16 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    background-color: #05010a;
+    background-color: var(--theme-bg);
     overflow: hidden;
     color: white;
     perspective: 1200px;
     cursor: crosshair;
     user-select: none;
+    transition: background-color 0.4s ease;
   }
 
-  body:active {
-    cursor: grabbing;
-  }
+  body:active { cursor: grabbing; }
 
   #canvas-bg {
     position: absolute;
@@ -63,17 +86,15 @@
     z-index: 0;
   }
 
-  /* Scanlines */
   .scanlines {
     position: fixed;
     top: 0; left: 0; width: 100vw; height: 100vh;
-    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.15) 50%, rgba(0,0,0,0.15));
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.18) 50%, rgba(0,0,0,0.18));
     background-size: 100% 4px;
     pointer-events: none;
     z-index: 1;
   }
 
-  /* Breathing glow effect */
   @keyframes panelGlow {
     0% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 15px rgba(255,255,255,0.1); }
     100% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 40px var(--theme-color); }
@@ -82,33 +103,33 @@
   .glass-panel {
     position: relative;
     z-index: 2;
-    background: var(--theme-bg-tint); 
-    backdrop-filter: blur(12px) saturate(180%);
-    -webkit-backdrop-filter: blur(12px) saturate(180%);
+    background: var(--panel-bg); 
+    backdrop-filter: blur(14px) saturate(180%);
+    -webkit-backdrop-filter: blur(14px) saturate(180%);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;
-    padding: 35px 40px;
-    width: 750px;
-    max-width: 90%;
+    padding: 30px 40px;
+    width: 780px;
+    max-width: 92%;
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: transform 0.1s ease-out, box-shadow 0.2s ease, border-color 0.3s ease;
+    transition: transform 0.1s ease-out, box-shadow 0.3s ease, background 0.4s ease;
     transform-style: preserve-3d;
     animation: panelGlow 3s infinite alternate ease-in-out;
   }
 
   .title-wrapper {
     position: relative;
-    margin: 0 0 25px 0;
+    margin: 0 0 18px 0;
     display: flex;
     flex-direction: column;
     align-items: center;
   }
 
   .top-warning {
-    margin-top: 15px;
-    font-size: 12px;
+    margin-top: 12px;
+    font-size: 11.5px;
     color: var(--orange);
     text-align: center;
     text-transform: uppercase;
@@ -133,7 +154,7 @@
   }
 
   h1:hover {
-    letter-spacing: 16px;
+    letter-spacing: 15px;
     transform: scale(1.02);
     text-shadow: 
       0 0 10px rgba(255,255,255,1),
@@ -147,7 +168,7 @@
     right: -80px; 
     color: #ffea00;
     font-weight: 900;
-    font-size: 18px; 
+    font-size: 17px; 
     text-shadow: 1px 1px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 0 0 10px rgba(255, 234, 0, 0.6);
     transform: rotate(-15deg);
     pointer-events: auto;
@@ -169,27 +190,27 @@
     100% { transform: scale(1.05) rotate(-15deg); }
   }
 
-  /* Themes Bar */
+  /* 6 Epic Game-Changing Theme Switcher */
   .theme-bar {
     display: flex;
-    gap: 8px;
-    margin-bottom: 20px;
+    gap: 7px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
     justify-content: center;
     z-index: 5;
   }
 
   .theme-pill {
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(0, 0, 0, 0.6);
     border: 1px solid rgba(255,255,255,0.2);
-    color: #ccc;
+    color: #bbb;
     font-family: inherit;
     font-size: 10px;
-    letter-spacing: 1px;
-    padding: 5px 10px;
+    letter-spacing: 1.2px;
+    padding: 6px 11px;
     border-radius: 20px;
     cursor: crosshair;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
     text-transform: uppercase;
   }
 
@@ -197,58 +218,59 @@
     color: #000;
     background: var(--theme-color);
     border-color: var(--theme-color);
-    box-shadow: 0 0 12px var(--theme-color);
+    box-shadow: 0 0 14px var(--theme-color);
     font-weight: bold;
+    transform: translateY(-1px);
   }
 
   .grid-container {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
     width: 100%;
     padding: 5px 0;
     transform: translateZ(25px);
   }
 
   .place-btn {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
     border: 1px solid rgba(255, 255, 255, 0.15);
     color: #e0e0e0;
-    padding: 22px 18px;
-    font-size: 18px; 
+    padding: 18px 12px;
+    font-size: 15px; 
     font-family: inherit;
     font-weight: bold;
-    letter-spacing: 3px; 
+    letter-spacing: 2px; 
     cursor: crosshair;
     border-radius: 8px;
-    transition: all 0.3s ease-out, border-color 0.3s ease-out, box-shadow 0.4s ease-out, transform 0.3s ease-out;
+    transition: all 0.3s ease-out;
     position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
     flex-direction: column;
     overflow: hidden;
+    text-align: center;
   }
 
-  .place-btn > * {
-    position: relative;
-    z-index: 1;
-  }
+  .place-btn > * { position: relative; z-index: 1; }
 
   .place-btn:hover {
-    background: rgba(255, 255, 255, 0.08);
-    transform: scale(1.02);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: rgba(255, 255, 255, 0.1);
+    transform: scale(1.03);
+    border-color: rgba(255, 255, 255, 0.5);
   }
 
   .place-btn.is-gold { border-color: var(--gold); }
   .place-btn.is-bright-green { border-color: var(--bright-green); }
+  .place-btn.is-cyan { border-color: var(--cyan); }
 
-  .place-btn.is-gold:hover { box-shadow: 0 0 18px 6px rgba(255, 215, 0, 0.7); }
-  .place-btn.is-bright-green:hover { box-shadow: 0 0 18px 6px rgba(50, 205, 50, 0.7); }
+  .place-btn.is-gold:hover { box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.7); }
+  .place-btn.is-bright-green:hover { box-shadow: 0 0 20px 5px rgba(50, 205, 50, 0.7); }
+  .place-btn.is-cyan:hover { box-shadow: 0 0 20px 5px rgba(0, 229, 255, 0.7); }
 
   .mini-label {
-    font-size: 11px;
+    font-size: 10px;
     margin-bottom: 5px;
     letter-spacing: 1px;
     text-shadow: 0 0 8px currentColor;
@@ -261,33 +283,33 @@
   }
 
   .status-working {
-    font-size: 11px;
+    font-size: 10.5px;
     color: rgba(255, 255, 255, 0.4);
-    margin-top: 6px;
+    margin-top: 5px;
     letter-spacing: 1px;
     font-weight: normal;
   }
-  .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.9); }
+  .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.95); }
 
   /* Bakery Launcher Bar */
   .bakery-toggle-btn {
-    margin-top: 20px;
+    margin-top: 18px;
     width: 100%;
     background: rgba(0, 0, 0, 0.75);
     border: 1px dashed var(--theme-color);
     color: #fff;
-    padding: 14px;
+    padding: 13px;
     border-radius: 8px;
     font-family: inherit;
-    font-size: 14px;
+    font-size: 13.5px;
     font-weight: bold;
-    letter-spacing: 3px;
+    letter-spacing: 2.5px;
     cursor: crosshair;
     transition: all 0.3s ease;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 10px;
+    gap: 12px;
   }
 
   .bakery-toggle-btn:hover {
@@ -302,44 +324,43 @@
     height: 8px;
     background: #39ff14;
     border-radius: 50%;
-    box-shadow: 0 0 8px #39ff14;
+    box-shadow: 0 0 10px #39ff14;
     animation: ovenPulse 1s infinite alternate;
   }
 
   @keyframes ovenPulse {
-    0% { opacity: 0.4; }
-    100% { opacity: 1; }
+    0% { opacity: 0.3; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1.2); }
   }
 
-  /* BAKERY GLOBAL CHAT DRAWER */
+  /* THE BAKERY GLOBAL CHAT DRAWER */
   .bakery-chat-panel {
     position: fixed;
-    right: -420px;
+    right: -450px;
     top: 0;
-    width: 390px;
+    width: 420px;
+    max-width: 95vw;
     height: 100vh;
-    background: rgba(5, 2, 12, 0.88);
-    backdrop-filter: blur(20px) saturate(200%);
-    -webkit-backdrop-filter: blur(20px) saturate(200%);
+    background: rgba(4, 1, 10, 0.92);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
     border-left: 2px solid var(--theme-color);
-    box-shadow: -10px 0 35px rgba(0,0,0,0.8), 0 0 20px rgba(0, 255, 255, 0.1);
+    box-shadow: -15px 0 45px rgba(0,0,0,0.9), 0 0 25px var(--theme-color);
     z-index: 100;
     transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
     display: flex;
     flex-direction: column;
   }
 
-  .bakery-chat-panel.open {
-    right: 0;
-  }
+  .bakery-chat-panel.open { right: 0; }
 
   .chat-header {
     padding: 16px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
+    border-bottom: 1px solid rgba(255,255,255,0.12);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(0,0,0,0.4);
+    background: rgba(0,0,0,0.5);
   }
 
   .chat-title {
@@ -349,15 +370,22 @@
     font-size: 15px;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 9px;
     text-shadow: 0 0 10px var(--theme-color);
+  }
+
+  .chat-status-text {
+    font-size: 10px;
+    color: var(--lime);
+    letter-spacing: 1px;
+    font-weight: normal;
   }
 
   .chat-close-btn {
     background: transparent;
     border: none;
     color: #aaa;
-    font-size: 20px;
+    font-size: 22px;
     cursor: crosshair;
     font-family: inherit;
     transition: color 0.2s;
@@ -365,30 +393,33 @@
   .chat-close-btn:hover { color: var(--theme-color); }
 
   .chat-user-bar {
-    padding: 10px 20px;
-    background: rgba(0,0,0,0.3);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 10px 18px;
+    background: rgba(0,0,0,0.35);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
+    font-size: 11.5px;
   }
 
   .chat-user-input {
-    background: rgba(255,255,255,0.07);
+    background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.2);
     color: var(--theme-color);
     padding: 4px 8px;
     border-radius: 4px;
     font-family: inherit;
     font-size: 12px;
-    width: 140px;
+    width: 150px;
+    outline: none;
   }
+
+  .chat-user-input:focus { border-color: var(--theme-color); }
 
   .chat-messages {
     flex: 1;
     overflow-y: auto;
-    padding: 15px 20px;
+    padding: 15px 18px;
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -401,7 +432,7 @@
   .chat-bubble {
     background: rgba(255, 255, 255, 0.04);
     border-left: 2px solid var(--theme-color);
-    padding: 8px 12px;
+    padding: 9px 12px;
     border-radius: 0 8px 8px 0;
     word-break: break-word;
     animation: msgFade 0.2s ease-out;
@@ -419,26 +450,16 @@
     font-size: 11px;
   }
 
-  .chat-msg-user {
-    font-weight: bold;
-    color: var(--theme-color);
-  }
-
-  .chat-msg-time {
-    color: rgba(255,255,255,0.4);
-  }
-
-  .chat-msg-text {
-    color: #eee;
-    line-height: 1.4;
-  }
+  .chat-msg-user { font-weight: bold; color: var(--theme-color); }
+  .chat-msg-time { color: rgba(255,255,255,0.4); font-size: 10px; }
+  .chat-msg-text { color: #eee; line-height: 1.4; }
 
   .chat-input-area {
-    padding: 15px 20px;
+    padding: 14px 18px;
     border-top: 1px solid rgba(255,255,255,0.1);
     display: flex;
     gap: 8px;
-    background: rgba(0,0,0,0.5);
+    background: rgba(0,0,0,0.6);
   }
 
   .chat-msg-input {
@@ -472,7 +493,7 @@
 
   .chat-send-btn:hover {
     box-shadow: 0 0 12px var(--theme-color);
-    transform: scale(1.05);
+    transform: scale(1.04);
   }
 
   /* STARTUP ANIMATION OVERLAY */
@@ -480,7 +501,7 @@
     position: fixed;
     top: 0; left: 0;
     width: 100vw; height: 100vh;
-    background: #020005;
+    background: #010004;
     z-index: 9999;
     display: flex;
     flex-direction: column;
@@ -544,16 +565,16 @@
     100% { opacity: 0.8; transform: skew(1deg); }
   }
 
-  .test-tool { position: absolute; bottom: 20px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
+  .test-tool { position: absolute; bottom: 15px; z-index: 10; opacity: 0.2; transition: opacity 0.3s; display: flex; gap: 10px; }
   .test-tool:hover { opacity: 1; }
-  .test-input { background: #111; border: 1px solid #444; color: white; padding: 10px; border-radius: 4px; font-family: inherit; width: 200px; cursor: text;}
-  .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 15px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
+  .test-input { background: #111; border: 1px solid #444; color: white; padding: 8px; border-radius: 4px; font-family: inherit; width: 180px; cursor: text;}
+  .test-btn { background: #222; border: 1px solid #666; color: #fff; cursor: crosshair; padding: 0 12px; border-radius: 4px; font-family: inherit; transition: all 0.2s;}
   .test-btn:hover { background: var(--theme-color); color: #000; border-color: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
 </style>
 </head>
 <body data-theme="dynamic">
 
-  <!-- Startup Boot Animation -->
+  <!-- Startup Animation -->
   <div id="startup-overlay" onclick="dismissStartup()">
     <div class="startup-loader">
       <div class="startup-logo">COMPILATION</div>
@@ -574,34 +595,35 @@
       <div class="top-warning">if you visit these sites without using compilation they wont work when you try again</div>
     </div>
 
-    <!-- 6 Unique Themes Switcher Bar -->
+    <!-- 6 Game-Changing Themes Switcher -->
     <div class="theme-bar">
       <button class="theme-pill active" onclick="setTheme('dynamic', this)">Dynamic RGB</button>
+      <button class="theme-pill" onclick="setTheme('matrix', this)">Matrix Rain</button>
       <button class="theme-pill" onclick="setTheme('synthwave', this)">Synthwave '84</button>
-      <button class="theme-pill" onclick="setTheme('crimson', this)">Crimson Void</button>
-      <button class="theme-pill" onclick="setTheme('matrix', this)">Matrix Toxic</button>
-      <button class="theme-pill" onclick="setTheme('abyss', this)">Abyss Biolum</button>
-      <button class="theme-pill" onclick="setTheme('solar', this)">Solar Flare</button>
-      <button class="theme-pill" onclick="setTheme('nebula', this)">Purple Nebula</button>
+      <button class="theme-pill" onclick="setTheme('blackhole', this)">Black Hole</button>
+      <button class="theme-pill" onclick="setTheme('cyberpunk', this)">Cyber Storm</button>
+      <button class="theme-pill" onclick="setTheme('hyperspace', this)">Hyperspace</button>
+      <button class="theme-pill" onclick="setTheme('vapor', this)">Arcade Vapor</button>
     </div>
 
-    <!-- PIE PLACES: 04 and 05 Only -->
+    <!-- Places: Pie Place 04, Pie Place 05, and Google Doc Place -->
     <div class="grid-container" id="menu"></div>
 
-    <!-- The Bakery Live Chat Button -->
+    <!-- The Bakery Live Global Chat -->
     <button class="bakery-toggle-btn" onclick="toggleBakeryChat()">
       <span class="oven-dot"></span>
-      <span>ENTER THE BAKERY [GLOBAL CHAT]</span>
+      <span>ENTER THE BAKERY [LIVE GLOBAL CHAT]</span>
     </button>
   </div>
 
-  <!-- THE BAKERY GLOBAL CHAT DRAWER -->
+  <!-- THE BAKERY DRAWER -->
   <div class="bakery-chat-panel" id="bakery-panel">
     <div class="chat-header">
       <div class="chat-title">
         <span class="oven-dot"></span>
         <span>THE BAKERY</span>
       </div>
+      <span class="chat-status-text" id="chat-conn-status">● CONNECTING</span>
       <button class="chat-close-btn" onclick="toggleBakeryChat()">✕</button>
     </div>
     <div class="chat-user-bar">
@@ -631,73 +653,32 @@
     }
     setTimeout(() => {
       const status = document.getElementById('boot-status');
-      if(status) status.innerText = "WARP CORES STABILIZED";
+      if(status) status.innerText = "SYSTEMS READY • ACCESS GRANTED";
     }, 600);
-    setTimeout(dismissStartup, 1400);
+    setTimeout(dismissStartup, 1300);
     window.addEventListener('keydown', (e) => { if(e.key === 'Escape') dismissStartup(); });
 
-    /* THEMES LOGIC */
-    let currentTheme = 'dynamic';
-    const themeHues = {
-      dynamic: 180,
-      synthwave: 320,
-      crimson: 350,
-      matrix: 120,
-      abyss: 190,
-      solar: 45,
-      nebula: 275
-    };
-
-    function setTheme(name, btn) {
-      currentTheme = name;
-      document.body.setAttribute('data-theme', name);
-      document.querySelectorAll('.theme-pill').forEach(b => b.classList.remove('active'));
-      if(btn) btn.classList.add('active');
-
-      if (name !== 'dynamic') {
-        globalHue = themeHues[name];
-        const hexMap = {
-          synthwave: '#ff00aa',
-          crimson: '#ff073a',
-          matrix: '#39ff14',
-          abyss: '#00e5ff',
-          solar: '#ffd700',
-          nebula: '#9d00ff'
-        };
-        document.documentElement.style.setProperty('--theme-color', hexMap[name]);
-      }
-    }
-
-    const quotes = [
-      "100% legal",
-      "Also try Opera GX",
-      "Never leave your pie in for too long",
-      "Remember the good old days",
-      "RIP Sweet Tea",
-      "JC>CC",
-      "T-cubed",
-      "Takis! Takis! Takis!",
-      "does anyone even read these?",
-      "Lafayette B.",
-      "No Oil rigs here",
-      "say grenade 10 times fast",
-      "2-Crack, Plumbous, Rodrick, Slopadopalis",
-      "BLEHELEHEHHEEHH",
-      "Stay Strong Showtime Abdul Al Baker",
-      "Apple pie is good",
-      "time to get some stuff done",
-      "Travis or Youngboy?",
-      "This site has 1.3K views as of Feb 26",
-      "are you rushing or are you dragging?",
-      "Not quite my tempo...",
-      "That's my tempo..."
-    ];
-    document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
-
-    /* ONLY PIE PLACE 04 AND 05 */
+    /* PLACES CONFIGURATION */
     const places = [
-      { label: "PIE PLACE 04", hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", colorClass: 'is-gold', isFavorite: true },
-      { label: "PIE PLACE 05", hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", colorClass: 'is-bright-green', isClassic: true }
+      { 
+        label: "PIE PLACE 04", 
+        hex: "68747470733a2f2f666f72742e726569646368616c66696e2e776f726b6572732e646576", 
+        colorClass: 'is-gold', 
+        isFavorite: true 
+      },
+      { 
+        label: "PIE PLACE 05", 
+        hex: "68747470733a2f2f676168323232322e6769746875622e696f2f4e6f6f62732f", 
+        colorClass: 'is-bright-green', 
+        isClassic: true 
+      },
+      { 
+        label: "PIE ARCHIVE", 
+        hex: "68747470733a2f2f646f63732e676f6f676c652e636f6d2f646f63756d656e742f642f3169446568464939546549456c5f2d4964724558595a7237382d7a31504e4f6d6975344947664c73437163342f656469743f7461623d742e396c703866787868337977", 
+        colorClass: 'is-cyan', 
+        isDoc: true,
+        direct: true
+      }
     ];
 
     const menu = document.getElementById('menu');
@@ -709,15 +690,17 @@
       if (p.colorClass) btn.classList.add(p.colorClass);
 
       let topLabel = '';
-      if (p.isFavorite) {
+      if (p.isDoc) {
+        topLabel = `<span class="mini-label" style="color: var(--cyan);">📄 GOOGLE DOC 📄</span>`;
+      } else if (p.isFavorite) {
         topLabel = `<span class="mini-label" style="color: var(--gold);">★ FAVORITE ★</span>`;
       } else if (p.isClassic) {
-        topLabel = `<span class="mini-label" style="color: var(--cyan);">⚙️ CLASSIC ⚙️</span>`;
+        topLabel = `<span class="mini-label" style="color: var(--lime);">⚙️ CLASSIC ⚙️</span>`;
       }
 
       let statusHtml = `<span class="status-working">working</span>`;
       btn.innerHTML = `${topLabel}<span>${p.label}</span>${statusHtml}`;
-      btn.onclick = () => initSession(p.hex);
+      btn.onclick = () => initSession(p.hex, p.direct);
       menu.appendChild(btn);
     });
 
@@ -731,10 +714,14 @@
       panel.style.transform = `rotateY(0deg) rotateX(0deg)`;
     });
 
-    function initSession(h) {
+    function initSession(h, isDirect = false) {
       let u = '';
       for (let i = 0; i < h.length; i += 2) u += String.fromCharCode(parseInt(h.substr(i, 2), 16));
-      launch(u);
+      if (isDirect) {
+        window.open(u, '_blank');
+      } else {
+        launch(u);
+      }
     }
 
     function testLink() {
@@ -751,7 +738,6 @@
       const target = `${url}${sep}session=${id}`;
 
       const currentColor = getComputedStyle(document.documentElement).getPropertyValue('--theme-color').trim();
-
       const greetings = ["good luck", "have fun", "Goodbye", "See ya"];
       const randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
 
@@ -770,7 +756,6 @@
             }
             canvas { position: absolute; top: 0; left: 0; z-index: 1; pointer-events: none; transition: opacity 1.5s ease-in-out; }
           </style>
-          
           <canvas id="warpCanvas"></canvas>
           <iframe id="frm" src="${target}" allowfullscreen sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-forms"></iframe>
           <div class="msg" id="ldr">${randomGreeting}<div class="sub">-Meowmaster</div></div>
@@ -780,7 +765,6 @@
             const wctx = wc.getContext('2d');
             let stars = [];
             wc.width = window.innerWidth; wc.height = window.innerHeight;
-            
             for(let i=0; i<600; i++) {
               stars.push({
                 x: Math.random()*wc.width-wc.width/2, 
@@ -789,14 +773,12 @@
                 pz: Math.random()*wc.width 
               });
             }
-            
             let speed = 0.5;
             let animationFrameId;
             let isTransitioning = false;
 
             function animateWarp() {
               speed += 0.2 + (speed * 0.025); 
-              
               if (speed > 130 && !isTransitioning) {
                 isTransitioning = true;
                 document.getElementById('ldr').style.opacity = '0';
@@ -844,7 +826,36 @@
       }
     }
 
-    /* THE BAKERY GLOBAL CHAT ENGINE (GunDB P2P Mesh for GitHub Pages) */
+    const quotes = [
+      "100% legal",
+      "Also try Opera GX",
+      "Never leave your pie in for too long",
+      "Remember the good old days",
+      "RIP Sweet Tea",
+      "JC>CC",
+      "T-cubed",
+      "Takis! Takis! Takis!",
+      "does anyone even read these?",
+      "Lafayette B.",
+      "No Oil rigs here",
+      "say grenade 10 times fast",
+      "2-Crack, Plumbous, Rodrick, Slopadopalis",
+      "BLEHELEHEHHEEHH",
+      "Stay Strong Showtime Abdul Al Baker",
+      "Apple pie is good",
+      "time to get some stuff done",
+      "Travis or Youngboy?",
+      "This site has 1.3K views as of Feb 26",
+      "are you rushing or are you dragging?",
+      "Not quite my tempo...",
+      "That's my tempo..."
+    ];
+    document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
+
+    /* =========================================================================
+       THE BAKERY REALTIME CROSS-DEVICE CHAT (MQTT WebSockets)
+       Works seamlessly across any browser, phone, PC, and network!
+       ========================================================================= */
     const defaultHandle = 'Baker_' + Math.floor(1000 + Math.random() * 9000);
     const handleInput = document.getElementById('chatHandle');
     handleInput.value = localStorage.getItem('bakery_handle') || defaultHandle;
@@ -852,24 +863,56 @@
       localStorage.setItem('bakery_handle', handleInput.value.trim() || defaultHandle);
     });
 
-    const gun = Gun([
-      'https://gun-manhattan.herokuapp.com/gun',
-      'https://peer.wallie.io/gun',
-      'https://gundb-relay.glitch.me/gun'
-    ]);
-    const bakeryChat = gun.get('compilation_the_bakery_v3');
     const chatList = document.getElementById('chatList');
-    const receivedMsgs = new Set();
+    const statusText = document.getElementById('chat-conn-status');
+    const BAKERY_TOPIC = 'compilation/the_bakery/chat/global_v4';
 
-    bakeryChat.map().on((msg, id) => {
-      if (!msg || !msg.text || receivedMsgs.has(id)) return;
-      receivedMsgs.add(id);
+    // Connect to EMQX Public WebSocket MQTT Broker
+    const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
+      clientId: 'baker_' + Math.random().toString(16).substring(2, 10),
+      clean: true,
+      connectTimeout: 4000,
+      reconnectPeriod: 2500
+    });
 
+    mqttClient.on('connect', () => {
+      statusText.innerText = '● LIVE (BAKERY OVEN HOT)';
+      statusText.style.color = '#39ff14';
+      mqttClient.subscribe(BAKERY_TOPIC);
+    });
+
+    mqttClient.on('reconnect', () => {
+      statusText.innerText = '● RECONNECTING...';
+      statusText.style.color = '#ff6600';
+    });
+
+    mqttClient.on('offline', () => {
+      statusText.innerText = '● OFFLINE';
+      statusText.style.color = '#ff073a';
+    });
+
+    // Message History Storage
+    let savedHistory = JSON.parse(localStorage.getItem('bakery_history_v2') || '[]');
+    savedHistory.forEach(renderChatMessage);
+
+    mqttClient.on('message', (topic, payload) => {
+      try {
+        const msg = JSON.parse(payload.toString());
+        renderChatMessage(msg);
+        savedHistory.push(msg);
+        if (savedHistory.length > 50) savedHistory.shift();
+        localStorage.setItem('bakery_history_v2', JSON.stringify(savedHistory));
+      } catch (err) {
+        console.error(err);
+      }
+    });
+
+    function renderChatMessage(msg) {
       const bubble = document.createElement('div');
       bubble.className = 'chat-bubble';
       const timeStr = msg.time ? new Date(msg.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
       
-      const safeUser = document.createElement('div'); safeUser.innerText = msg.user || 'Anon';
+      const safeUser = document.createElement('div'); safeUser.innerText = msg.user || 'Baker';
       const safeText = document.createElement('div'); safeText.innerText = msg.text || '';
 
       bubble.innerHTML = `
@@ -881,7 +924,7 @@
       `;
       chatList.appendChild(bubble);
       chatList.scrollTop = chatList.scrollHeight;
-    });
+    }
 
     function toggleBakeryChat() {
       const p = document.getElementById('bakery-panel');
@@ -907,232 +950,152 @@
         time: Date.now()
       };
 
-      bakeryChat.set(msgObj);
+      mqttClient.publish(BAKERY_TOPIC, JSON.stringify(msgObj));
       input.value = '';
     }
 
-    /* MAIN PHYSICS ENGINE */
+    /* =========================================================================
+       6 GAME-CHANGING CANVAS THEME ENGINES
+       ========================================================================= */
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
-    let particlesArray = [];
-    let ripplesArray = []; 
-    
-    let globalHue = 180; 
-    
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
+    let activeTheme = 'dynamic';
+    let globalHue = 180;
     let mouse = { x: null, y: null };
     let isLeftMouseDown = false;
     let isRightMouseDown = false;
     let isTimeFrozen = false; 
     let isOvercharged = false; 
 
-    window.addEventListener('mousemove', function(e) { mouse.x = e.x; mouse.y = e.y; });
-    window.addEventListener('mouseout', function() { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false;});
-    
-    window.addEventListener('mousedown', (e) => { 
-      if (e.button === 0) isLeftMouseDown = true; 
-      if (e.button === 2) isRightMouseDown = true;
-    });
+    window.addEventListener('mousemove', e => { mouse.x = e.x; mouse.y = e.y; });
+    window.addEventListener('mouseout', () => { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false; });
+    window.addEventListener('mousedown', e => { if (e.button === 0) isLeftMouseDown = true; if (e.button === 2) isRightMouseDown = true; });
     window.addEventListener('contextmenu', e => e.preventDefault());
-
-    window.addEventListener('keydown', (e) => { 
+    window.addEventListener('keydown', e => { 
       if (e.code === 'Space' && e.target.tagName !== 'INPUT') isTimeFrozen = true; 
       if (e.key === 'Shift') isOvercharged = true; 
     });
-    window.addEventListener('keyup', (e) => { 
+    window.addEventListener('keyup', e => { 
       if (e.code === 'Space') isTimeFrozen = false; 
       if (e.key === 'Shift') isOvercharged = false; 
     });
 
-    document.getElementById('main-title').addEventListener('dblclick', (e) => {
-      isOvercharged = true;
-      setTimeout(() => isOvercharged = false, 1500);
-      for(let i=0; i<15; i++) {
-        setTimeout(() => {
-          ripplesArray.push(new Ripple(window.innerWidth/2, window.innerHeight/2 - 150, true, '#ff00aa'));
-        }, i * 100);
-      }
-    });
+    function setTheme(name, btn) {
+      activeTheme = name;
+      document.body.setAttribute('data-theme', name);
+      document.querySelectorAll('.theme-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
 
-    window.addEventListener('mouseup', (e) => { 
-      if (e.button === 0) {
-        isLeftMouseDown = false; 
-        if (mouse.x === undefined || mouse.y === undefined) return;
-        
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, `hsl(${globalHue}, 100%, 50%)`)); 
+      const colorMap = {
+        dynamic: `hsl(${globalHue}, 100%, 50%)`,
+        matrix: '#39ff14',
+        synthwave: '#ff00aa',
+        blackhole: '#ff7700',
+        cyberpunk: '#00e5ff',
+        hyperspace: '#9d00ff',
+        vapor: '#ff71ce'
+      };
+      document.documentElement.style.setProperty('--theme-color', colorMap[name]);
 
-        for (let i = 0; i < particlesArray.length; i++) {
-          let dx = particlesArray[i].x - mouse.x;
-          let dy = particlesArray[i].y - mouse.y;
-          let distance = Math.sqrt(dx*dx + dy*dy);
-          if (distance < 400) { 
-            let force = (400 - distance) / 6; 
-            let dirX = dx / distance;
-            let dirY = dy / distance;
-            particlesArray[i].vx += dirX * force;
-            particlesArray[i].vy += dirY * force;
-          }
-        }
-      }
-      if (e.button === 2) {
-        isRightMouseDown = false;
-        ripplesArray.push(new Ripple(mouse.x, mouse.y, true, '#ff00aa')); 
-      }
-    });
+      // Re-init engines for the selected theme
+      if (name === 'matrix') initMatrix();
+      if (name === 'synthwave') initSynthwave();
+      if (name === 'blackhole') initBlackhole();
+      if (name === 'cyberpunk') initCyberpunk();
+      if (name === 'hyperspace') initHyperspace();
+      if (name === 'vapor') initVapor();
+    }
+
+    /* THEME 0: DYNAMIC RGB PARTICLES */
+    let particlesArray = [];
+    let ripplesArray = [];
 
     class Ripple {
       constructor(x, y, isMega = false, colorStr) {
-        this.x = x; this.y = y; 
-        this.radius = 10; 
-        this.alpha = 1; 
-        this.colorStr = colorStr;
-        this.lineWidth = isMega ? 20 : 8;
-        this.expansionRate = isMega ? 30 : 15;
+        this.x = x; this.y = y; this.radius = 10; this.alpha = 1; this.colorStr = colorStr;
+        this.lineWidth = isMega ? 20 : 8; this.expansionRate = isMega ? 30 : 15;
       }
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        
-        let hslMatch = this.colorStr.match(/\d+/g);
-        if(hslMatch && hslMatch.length >= 3) {
-           ctx.strokeStyle = `hsla(${hslMatch[0]}, ${hslMatch[1]}%, ${hslMatch[2]}%, ${this.alpha})`;
-        } else {
-           ctx.strokeStyle = `rgba(255, 0, 170, ${this.alpha})`; 
-        }
-        
+        ctx.strokeStyle = this.colorStr;
         ctx.lineWidth = this.lineWidth;
-        ctx.shadowBlur = 30;
-        ctx.shadowColor = this.colorStr;
         ctx.stroke();
-        ctx.shadowBlur = 0;
       }
       update() {
-        let timeScale = isTimeFrozen ? 0.1 : 1;
-        this.radius += this.expansionRate * timeScale; 
-        this.alpha -= (0.1 * timeScale); 
-        this.lineWidth *= (1 - (0.08 * timeScale)); 
+        this.radius += this.expansionRate;
+        this.alpha -= 0.08;
       }
     }
 
     class Particle {
       constructor(x, y, vx, vy, size) {
         this.x = x; this.y = y; this.vx = vx; this.vy = vy;
-        this.baseVx = vx; this.baseVy = vy;
-        this.size = size; 
-        this.hueOffset = (Math.random() * 40) - 20; 
+        this.baseVx = vx; this.baseVy = vy; this.size = size;
+        this.hueOffset = (Math.random() * 40) - 20;
       }
       draw() {
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2, false);
-        
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
         let myHue = globalHue + this.hueOffset;
-        let fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
-        
-        ctx.fillStyle = fillStyle;
-        ctx.shadowBlur = isOvercharged ? 25 : 15;
-        ctx.shadowColor = fillStyle;
+        ctx.fillStyle = isOvercharged ? '#ff00aa' : `hsl(${myHue}, 100%, 50%)`;
         ctx.fill();
-        ctx.shadowBlur = 0; 
       }
       update() {
-        if (this.x + this.size > canvas.width || this.x - this.size < 0) {
-          this.vx = -this.vx; this.baseVx = -this.baseVx;
-          if(this.x < 0) this.x = this.size; else this.x = canvas.width - this.size;
-        }
-        if (this.y + this.size > canvas.height || this.y - this.size < 0) {
-          this.vy = -this.vy; this.baseVy = -this.baseVy;
-          if(this.y < 0) this.y = this.size; else this.y = canvas.height - this.size;
-        }
+        if (this.x > canvas.width || this.x < 0) this.vx = -this.vx;
+        if (this.y > canvas.height || this.y < 0) this.vy = -this.vy;
 
-        if (isOvercharged) {
-          this.vx += (Math.random() - 0.5) * 5;
-          this.vy += (Math.random() - 0.5) * 5;
-        }
-
-        if(mouse.x != undefined && mouse.y != undefined) {
-          let dx = mouse.x - this.x;
-          let dy = mouse.y - this.y;
-          let distance = Math.sqrt(dx*dx + dy*dy);
-          
-          if (distance < 600) {
-            let dirX = dx / distance;
-            let dirY = dy / distance;
-            let force = (600 - distance) / 600; 
-
+        if (mouse.x && mouse.y) {
+          let dx = mouse.x - this.x; let dy = mouse.y - this.y;
+          let dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < 400) {
+            let force = (400 - dist) / 400;
             if (isLeftMouseDown) {
-              this.vx += dirX * force * 6;
-              this.vy += dirY * force * 6;
-              this.vx += dirY * force * 2.5;
-              this.vy -= dirX * force * 2.5;
-              
-              if (distance < 50) {
-                this.vx *= 0.2; 
-                this.vy *= 0.2; 
-                this.x += (mouse.x - this.x) * 0.15; 
-                this.y += (mouse.y - this.y) * 0.15; 
-              }
+              this.vx += (dx / dist) * force * 5;
+              this.vy += (dy / dist) * force * 5;
             } else if (isRightMouseDown) {
-              this.vx -= dirX * force * 4;
-              this.vy -= dirY * force * 4;
-            } else if (distance < 120 && !isOvercharged) {
-              let hoverForce = (120 - distance) / 120;
-              this.vx -= dirX * hoverForce * 0.5;
-              this.vy -= dirY * hoverForce * 0.5;
+              this.vx -= (dx / dist) * force * 5;
+              this.vy -= (dy / dist) * force * 5;
             }
           }
         }
-
-        let currentSpeedSq = this.vx * this.vx + this.vy * this.vy;
-        let baseSpeedSq = this.baseVx * this.baseVx + this.baseVy * this.baseVy;
-
-        if (currentSpeedSq > baseSpeedSq * 2 && !isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
-          this.vx *= 0.93; 
-          this.vy *= 0.93;
-        } else if (!isLeftMouseDown && !isRightMouseDown && !isOvercharged) {
-          this.vx += (this.baseVx - this.vx) * 0.02;
-          this.vy += (this.baseVy - this.vy) * 0.02;
-        }
-
-        let timeScale = isTimeFrozen ? 0.05 : 1;
-        this.x += this.vx * timeScale; 
-        this.y += this.vy * timeScale;
-        
+        this.x += this.vx; this.y += this.vy;
         this.draw();
       }
     }
 
     function initParticles() {
       particlesArray = [];
-      let numberOfParticles = (canvas.height * canvas.width) / 8000; 
-      for (let i = 0; i < numberOfParticles; i++) {
-        let size = (Math.random() * 3) + 2; 
-        let x = Math.random() * (innerWidth - size * 2) + size;
-        let y = Math.random() * (innerHeight - size * 2) + size;
-        let vx = (Math.random() * 2) - 1; 
-        let vy = (Math.random() * 2) - 1;
-        particlesArray.push(new Particle(x, y, vx, vy, size));
+      let count = (canvas.height * canvas.width) / 9000;
+      for (let i = 0; i < count; i++) {
+        particlesArray.push(new Particle(
+          Math.random() * innerWidth, Math.random() * innerHeight,
+          (Math.random() - 0.5) * 2, (Math.random() - 0.5) * 2,
+          Math.random() * 3 + 1.5
+        ));
       }
     }
 
-    function connectParticles() {
-      let baseHue = isTimeFrozen ? 50 : (isOvercharged ? 320 : globalHue);
-      let sat = isTimeFrozen ? "100%" : "100%";
-      let light = isTimeFrozen ? "50%" : "60%";
+    function renderDynamicParticles() {
+      globalHue += 0.2;
+      document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+      ctx.fillStyle = 'rgba(5, 1, 10, 0.2)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+      for (let i = 0; i < particlesArray.length; i++) {
+        particlesArray[i].update();
+      }
       for (let a = 0; a < particlesArray.length; a++) {
         for (let b = a; b < particlesArray.length; b++) {
           let dx = particlesArray[a].x - particlesArray[b].x;
           let dy = particlesArray[a].y - particlesArray[b].y;
-          let distance = dx*dx + dy*dy;
-          
-          let connectionLimit = isOvercharged ? 25000 : 15000;
-          
-          if (distance < connectionLimit) {
-            let opacityValue = 1 - (distance / connectionLimit);
-            ctx.strokeStyle = `hsla(${baseHue}, ${sat}, ${light}, ${opacityValue * (isOvercharged ? 1 : 0.8)})`; 
-            ctx.lineWidth = isTimeFrozen ? 3 : (isOvercharged ? 2.5 : 2); 
+          let dist = dx*dx + dy*dy;
+          if (dist < 14000) {
+            ctx.strokeStyle = `hsla(${globalHue}, 100%, 60%, ${1 - dist/14000})`;
+            ctx.lineWidth = 1.5;
             ctx.beginPath();
             ctx.moveTo(particlesArray[a].x, particlesArray[a].y);
             ctx.lineTo(particlesArray[b].x, particlesArray[b].y);
@@ -1142,54 +1105,245 @@
       }
     }
 
-    function drawVortexCore() {
-      if ((isLeftMouseDown || isRightMouseDown) && mouse.x != undefined) {
+    /* THEME 1: MATRIX DIGITAL RAIN */
+    let matrixDrops = [];
+    const matrixChars = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789COMPILATIONBAKERY";
+    function initMatrix() {
+      let columns = Math.floor(canvas.width / 16);
+      matrixDrops = [];
+      for (let i = 0; i < columns; i++) matrixDrops[i] = Math.random() * -100;
+    }
+    function renderMatrix() {
+      ctx.fillStyle = "rgba(0, 8, 2, 0.12)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.font = "14px monospace";
+
+      for (let i = 0; i < matrixDrops.length; i++) {
+        const text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
+        const x = i * 16;
+        const y = matrixDrops[i] * 16;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText(text, x, y);
+        ctx.fillStyle = "#39ff14";
+        ctx.fillText(text, x, y - 16);
+        if (y > canvas.height && Math.random() > 0.975) matrixDrops[i] = 0;
+        matrixDrops[i]++;
+      }
+    }
+
+    /* THEME 2: SYNTHWAVE 1984 3D GRID & SUN */
+    let synthOffset = 0;
+    function initSynthwave() {}
+    function renderSynthwave() {
+      ctx.fillStyle = "#0a0016";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      let horizon = canvas.height * 0.65;
+      let cx = canvas.width / 2;
+
+      // Glowing Sunset
+      let sunGrad = ctx.createLinearGradient(cx, horizon - 160, cx, horizon);
+      sunGrad.addColorStop(0, "#ffee00");
+      sunGrad.addColorStop(0.5, "#ff007f");
+      sunGrad.addColorStop(1, "#7f00ff");
+      ctx.fillStyle = sunGrad;
+      ctx.beginPath();
+      ctx.arc(cx, horizon - 20, 140, Math.PI, 0, false);
+      ctx.fill();
+
+      // Sun horizontal stripes
+      ctx.fillStyle = "#0a0016";
+      for (let i = 0; i < 7; i++) {
+        let barY = horizon - 20 - (i * 18);
+        ctx.fillRect(cx - 140, barY, 280, 4 + i * 1.5);
+      }
+
+      // 3D Perspective Grid
+      synthOffset = (synthOffset + 2) % 40;
+      ctx.strokeStyle = "rgba(255, 0, 170, 0.7)";
+      ctx.lineWidth = 2;
+      for (let x = -canvas.width; x < canvas.width * 2; x += 60) {
         ctx.beginPath();
-        ctx.arc(mouse.x, mouse.y, 8, 0, Math.PI * 2);
-        ctx.fillStyle = '#ffffff';
-        ctx.shadowBlur = 40;
-        ctx.shadowColor = isRightMouseDown ? '#ff00aa' : `hsl(${globalHue}, 100%, 50%)`;
+        ctx.moveTo(cx, horizon);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = horizon; y < canvas.height; y += 12) {
+        let py = y + (synthOffset * ((y - horizon) / (canvas.height - horizon)));
+        if (py > canvas.height) continue;
+        ctx.beginPath();
+        ctx.moveTo(0, py);
+        ctx.lineTo(canvas.width, py);
+        ctx.stroke();
+      }
+    }
+
+    /* THEME 3: BLACK HOLE SINGULARITY */
+    let cosmicParticles = [];
+    function initBlackhole() {
+      cosmicParticles = [];
+      for (let i = 0; i < 350; i++) {
+        cosmicParticles.push({
+          angle: Math.random() * Math.PI * 2,
+          radius: Math.random() * 380 + 90,
+          speed: Math.random() * 0.03 + 0.01,
+          size: Math.random() * 2.5 + 1,
+          color: Math.random() > 0.5 ? '#ff7700' : '#ffea00'
+        });
+      }
+    }
+    function renderBlackhole() {
+      ctx.fillStyle = 'rgba(2, 2, 6, 0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      let cx = canvas.width / 2; let cy = canvas.height / 2;
+
+      // Event Horizon Accretion Disk
+      cosmicParticles.forEach(p => {
+        p.angle += p.speed * (250 / p.radius);
+        p.radius -= 0.3;
+        if (p.radius < 85) p.radius = 420;
+
+        let x = cx + Math.cos(p.angle) * p.radius * 1.6;
+        let y = cy + Math.sin(p.angle) * p.radius * 0.7;
+
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(x, y, p.size, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowBlur = 0;
-      }
+      });
+
+      // Central Shadow Singularity
+      ctx.beginPath();
+      ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+      ctx.fillStyle = '#000000';
+      ctx.shadowBlur = 40;
+      ctx.shadowColor = '#ff5500';
+      ctx.fill();
+      ctx.shadowBlur = 0;
     }
 
-    function animateParticles() {
-      requestAnimationFrame(animateParticles);
-      
-      if (currentTheme === 'dynamic') {
-        globalHue += 0.15;
-        if (globalHue >= 360) globalHue = 0;
-        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+    /* THEME 4: CYBERPUNK RAINSTORM */
+    let rainDrops = [];
+    function initCyberpunk() {
+      rainDrops = [];
+      for (let i = 0; i < 200; i++) {
+        rainDrops.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          l: Math.random() * 25 + 15,
+          speed: Math.random() * 12 + 15
+        });
       }
-      
-      if (isTimeFrozen || isOvercharged) {
-        ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-      }
+    }
+    function renderCyberpunk() {
+      ctx.fillStyle = 'rgba(3, 8, 20, 0.3)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      for (let i = ripplesArray.length - 1; i >= 0; i--) {
-        ripplesArray[i].update(); ripplesArray[i].draw();
-        if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1);
-      }
-
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update();
-      }
-      
-      connectParticles();
-      drawVortexCore();
+      // Rain streaking down
+      ctx.strokeStyle = '#00e5ff';
+      ctx.lineWidth = 1.5;
+      rainDrops.forEach(r => {
+        ctx.beginPath();
+        ctx.moveTo(r.x, r.y);
+        ctx.lineTo(r.x - 2, r.y + r.l);
+        ctx.stroke();
+        r.y += r.speed;
+        r.x -= 1.5;
+        if (r.y > canvas.height) { r.y = -20; r.x = Math.random() * canvas.width; }
+      });
     }
 
-    window.addEventListener('resize', function() {
-      canvas.width = innerWidth; canvas.height = innerHeight;
+    /* THEME 5: HYPERSPACE SPEED TUNNEL */
+    let warpStars = [];
+    function initHyperspace() {
+      warpStars = [];
+      for (let i = 0; i < 400; i++) {
+        warpStars.push({
+          x: (Math.random() - 0.5) * canvas.width * 2,
+          y: (Math.random() - 0.5) * canvas.height * 2,
+          z: Math.random() * canvas.width
+        });
+      }
+    }
+    function renderHyperspace() {
+      ctx.fillStyle = 'rgba(2, 0, 8, 0.35)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      let cx = canvas.width / 2; let cy = canvas.height / 2;
+
+      warpStars.forEach(s => {
+        s.z -= 25;
+        if (s.z <= 0) { s.z = canvas.width; s.x = (Math.random() - 0.5) * canvas.width * 2; s.y = (Math.random() - 0.5) * canvas.height * 2; }
+        let k = 250 / s.z;
+        let px = s.x * k + cx; let py = s.y * k + cy;
+        ctx.strokeStyle = '#9d00ff';
+        ctx.lineWidth = Math.min(4, (1 - s.z / canvas.width) * 5);
+        ctx.beginPath();
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + (px - cx) * 0.15, py + (py - cy) * 0.15);
+        ctx.stroke();
+      });
+    }
+
+    /* THEME 6: ARCADE VAPORWAVE */
+    let polyhedra = [];
+    function initVapor() {
+      polyhedra = [];
+      for (let i = 0; i < 20; i++) {
+        polyhedra.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          rot: Math.random() * Math.PI,
+          speed: (Math.random() - 0.5) * 0.02,
+          size: Math.random() * 30 + 20
+        });
+      }
+    }
+    function renderVapor() {
+      ctx.fillStyle = 'rgba(12, 0, 25, 0.25)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      polyhedra.forEach(p => {
+        p.rot += p.speed;
+        p.y += 0.5;
+        if (p.y > canvas.height + 50) p.y = -50;
+        ctx.save();
+        ctx.translate(p.x, p.y);
+        ctx.rotate(p.rot);
+        ctx.strokeStyle = '#ff71ce';
+        ctx.lineWidth = 2;
+        ctx.strokeRect(-p.size/2, -p.size/2, p.size, p.size);
+        ctx.strokeStyle = '#01cdfe';
+        ctx.strokeRect(-p.size/3, -p.size/3, p.size/1.5, p.size/1.5);
+        ctx.restore();
+      });
+    }
+
+    /* MASTER ANIMATION LOOP */
+    function masterRenderLoop() {
+      requestAnimationFrame(masterRenderLoop);
+      if (activeTheme === 'dynamic') renderDynamicParticles();
+      else if (activeTheme === 'matrix') renderMatrix();
+      else if (activeTheme === 'synthwave') renderSynthwave();
+      else if (activeTheme === 'blackhole') renderBlackhole();
+      else if (activeTheme === 'cyberpunk') renderCyberpunk();
+      else if (activeTheme === 'hyperspace') renderHyperspace();
+      else if (activeTheme === 'vapor') renderVapor();
+    }
+
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
       initParticles();
+      if (activeTheme === 'matrix') initMatrix();
+      if (activeTheme === 'synthwave') initSynthwave();
+      if (activeTheme === 'blackhole') initBlackhole();
+      if (activeTheme === 'cyberpunk') initCyberpunk();
+      if (activeTheme === 'hyperspace') initHyperspace();
+      if (activeTheme === 'vapor') initVapor();
     });
 
-    initParticles(); 
-    animateParticles();
+    initParticles();
+    masterRenderLoop();
   </script>
 </body>
 </html>
