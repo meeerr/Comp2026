@@ -266,9 +266,24 @@
   }
   .place-btn:hover .status-working { color: rgba(255, 255, 255, 0.95); }
 
+  /* More sites coming soon notice */
+  .coming-soon-notice {
+    margin-top: 14px;
+    font-size: 11px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    text-align: center;
+    transition: color 0.3s;
+  }
+  .coming-soon-notice:hover {
+    color: var(--theme-color);
+    text-shadow: 0 0 8px var(--theme-color);
+  }
+
   /* Bakery Toggle Button */
   .bakery-toggle-btn {
-    margin-top: 16px;
+    margin-top: 14px;
     width: 100%;
     background: rgba(0, 0, 0, 0.75);
     border: 1px dashed var(--theme-color);
@@ -278,7 +293,7 @@
     font-family: inherit;
     font-size: 13.5px;
     font-weight: bold;
-    letter-spacing: 2.5px;
+    letter-spacing: 2px;
     cursor: crosshair;
     transition: all 0.3s ease;
     display: flex;
@@ -340,9 +355,9 @@
 
   .chat-title {
     font-weight: 900;
-    letter-spacing: 2px;
+    letter-spacing: 1.5px;
     color: #fff;
-    font-size: 15px;
+    font-size: 14.5px;
     display: flex;
     align-items: center;
     gap: 9px;
@@ -350,10 +365,13 @@
   }
 
   .chat-status-text {
-    font-size: 10px;
+    font-size: 11px;
     color: var(--lime);
     letter-spacing: 1px;
-    font-weight: normal;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 5px;
   }
 
   .chat-close-btn {
@@ -584,10 +602,13 @@
     <!-- Places (4, 5, and Google Doc) -->
     <div class="grid-container" id="menu"></div>
 
-    <!-- The Bakery Live Chat -->
+    <!-- More Sites Coming Soon Notice -->
+    <div class="coming-soon-notice">► more sites coming soon ◄</div>
+
+    <!-- The Bakery (live chat) Launcher Button -->
     <button class="bakery-toggle-btn" onclick="toggleBakeryChat()">
       <span class="oven-dot"></span>
-      <span>ENTER THE BAKERY [LIVE GLOBAL CHAT]</span>
+      <span>The bakery (live chat)</span>
     </button>
   </div>
 
@@ -596,9 +617,9 @@
     <div class="chat-header">
       <div class="chat-title">
         <span class="oven-dot"></span>
-        <span>THE BAKERY</span>
+        <span>The bakery (live chat)</span>
       </div>
-      <span class="chat-status-text" id="chat-conn-status">● CONNECTING</span>
+      <span class="chat-status-text" id="chat-conn-status">Online: ● CONNECTED</span>
       <button class="chat-close-btn" onclick="toggleBakeryChat()">✕</button>
     </div>
     <div class="chat-user-bar">
@@ -827,7 +848,7 @@
     ];
     document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
 
-    /* THE BAKERY GLOBAL CHAT ENGINE (Cross-device WebSockets via MQTT) */
+    /* THE BAKERY GLOBAL CHAT ENGINE (WebSockets via MQTT) */
     const defaultHandle = 'Baker_' + Math.floor(1000 + Math.random() * 9000);
     const handleInput = document.getElementById('chatHandle');
     handleInput.value = localStorage.getItem('bakery_handle') || defaultHandle;
@@ -837,41 +858,66 @@
 
     const chatList = document.getElementById('chatList');
     const statusText = document.getElementById('chat-conn-status');
-    const BAKERY_TOPIC = 'compilation/the_bakery/chat/global_v5';
+    const BAKERY_TOPIC = 'compilation/the_bakery/chat/global_v6';
+    const PRESENCE_TOPIC = 'compilation/the_bakery/presence/global_v6';
 
+    const myClientId = 'baker_' + Math.random().toString(16).substring(2, 10);
     const mqttClient = mqtt.connect('wss://broker.emqx.io:8084/mqtt', {
-      clientId: 'baker_' + Math.random().toString(16).substring(2, 10),
+      clientId: myClientId,
       clean: true,
       connectTimeout: 4000,
       reconnectPeriod: 2500
     });
 
+    let activePeers = new Map();
+
     mqttClient.on('connect', () => {
-      statusText.innerText = '● LIVE (BAKERY HOT)';
+      statusText.innerText = 'Online: ● ACTIVE';
       statusText.style.color = '#39ff14';
       mqttClient.subscribe(BAKERY_TOPIC);
+      mqttClient.subscribe(PRESENCE_TOPIC);
+
+      // Presence heartbeat ping
+      setInterval(() => {
+        if (mqttClient.connected) {
+          mqttClient.publish(PRESENCE_TOPIC, JSON.stringify({ id: myClientId, time: Date.now() }));
+        }
+      }, 5000);
+      mqttClient.publish(PRESENCE_TOPIC, JSON.stringify({ id: myClientId, time: Date.now() }));
     });
 
     mqttClient.on('reconnect', () => {
-      statusText.innerText = '● RECONNECTING...';
+      statusText.innerText = 'Online: ● RECONNECTING...';
       statusText.style.color = '#ff6600';
     });
 
     mqttClient.on('offline', () => {
-      statusText.innerText = '● OFFLINE';
+      statusText.innerText = 'Online: ● OFFLINE';
       statusText.style.color = '#ff073a';
     });
 
-    let savedHistory = JSON.parse(localStorage.getItem('bakery_history_v3') || '[]');
+    let savedHistory = JSON.parse(localStorage.getItem('bakery_history_v4') || '[]');
     savedHistory.forEach(renderChatMessage);
 
     mqttClient.on('message', (topic, payload) => {
       try {
-        const msg = JSON.parse(payload.toString());
-        renderChatMessage(msg);
-        savedHistory.push(msg);
-        if (savedHistory.length > 60) savedHistory.shift();
-        localStorage.setItem('bakery_history_v3', JSON.stringify(savedHistory));
+        const data = JSON.parse(payload.toString());
+        if (topic === PRESENCE_TOPIC) {
+          activePeers.set(data.id, Date.now());
+          const now = Date.now();
+          let count = 0;
+          activePeers.forEach((lastSeen, id) => {
+            if (now - lastSeen < 12000) count++;
+            else activePeers.delete(id);
+          });
+          statusText.innerText = `Online: ● ${Math.max(1, count)} BAKERS`;
+          statusText.style.color = '#39ff14';
+        } else if (topic === BAKERY_TOPIC) {
+          renderChatMessage(data);
+          savedHistory.push(data);
+          if (savedHistory.length > 60) savedHistory.shift();
+          localStorage.setItem('bakery_history_v4', JSON.stringify(savedHistory));
+        }
       } catch (err) {
         console.error(err);
       }
@@ -1022,9 +1068,7 @@
       if (name === 'vapor') initVapor();
     }
 
-    /* =========================================================================
-       1. EXACT ORIGINAL DYNAMIC PARTICLE ENGINE (RESTORED 100%)
-       ========================================================================= */
+    /* 1. ORIGINAL DYNAMIC PARTICLE ENGINE (RESTORED 100%) */
     let particlesArray = [];
     let ripplesArray = []; 
 
@@ -1226,9 +1270,7 @@
       drawVortexCore();
     }
 
-    /* =========================================================================
-       2. INTERACTIVE MATRIX DIGITAL RAIN
-       ========================================================================= */
+    /* 2. INTERACTIVE MATRIX DIGITAL RAIN */
     let matrixDrops = [];
     let matrixExplosions = [];
     const matrixChars = "日ﾊﾐﾋｰｳｼﾅﾓﾆｻﾜﾂｵﾘｱﾎﾃﾏｹﾒｴｶｷﾑﾕﾗｾﾈｽﾀﾇﾍ0123456789COMPILATIONBAKERY";
@@ -1250,7 +1292,6 @@
         let x = i * 16;
         let y = matrixDrops[i].y * 16;
         let text = matrixChars.charAt(Math.floor(Math.random() * matrixChars.length));
-        
         let isNearMouse = (mouse.x && Math.abs(mouse.x - x) < 45 && Math.abs(mouse.y - y) < 45);
 
         if (isNearMouse) {
@@ -1270,7 +1311,6 @@
         matrixDrops[i].y += matrixDrops[i].speed;
       }
 
-      // Render Matrix Click Explosions
       for (let i = matrixExplosions.length - 1; i >= 0; i--) {
         let exp = matrixExplosions[i];
         ctx.strokeStyle = `rgba(57, 255, 20, ${exp.alpha})`;
@@ -1284,9 +1324,7 @@
       }
     }
 
-    /* =========================================================================
-       3. INTERACTIVE SYNTHWAVE '84 RETRO 3D HIGHWAY
-       ========================================================================= */
+    /* 3. INTERACTIVE SYNTHWAVE '84 RETRO 3D HIGHWAY */
     let synthOffset = 0;
     let synthLasers = [];
 
@@ -1298,7 +1336,6 @@
       let horizon = canvas.height * 0.6;
       let cx = canvas.width / 2 + (mouse.x ? (mouse.x - canvas.width/2) * 0.15 : 0);
 
-      // Sun
       let sunGrad = ctx.createLinearGradient(cx, horizon - 160, cx, horizon);
       sunGrad.addColorStop(0, "#ffee00");
       sunGrad.addColorStop(0.5, "#ff007f");
@@ -1308,14 +1345,12 @@
       ctx.arc(cx, horizon - 15, 130, Math.PI, 0, false);
       ctx.fill();
 
-      // Sun Blind Slices
       ctx.fillStyle = "#0c0018";
       for (let i = 0; i < 7; i++) {
         let barY = horizon - 15 - (i * 17);
         ctx.fillRect(cx - 140, barY, 280, 3.5 + i * 1.6);
       }
 
-      // Rolling Neon Grid
       synthOffset = (synthOffset + 3) % 45;
       ctx.strokeStyle = "rgba(255, 0, 170, 0.75)";
       ctx.lineWidth = 2;
@@ -1336,7 +1371,6 @@
         ctx.stroke();
       }
 
-      // Render Laser Grid Pulses
       for (let i = synthLasers.length - 1; i >= 0; i--) {
         let l = synthLasers[i];
         ctx.strokeStyle = '#00ffff';
@@ -1350,9 +1384,7 @@
       }
     }
 
-    /* =========================================================================
-       4. INTERACTIVE BLACK HOLE SINGULARITY & ACCRETION
-       ========================================================================= */
+    /* 4. INTERACTIVE BLACK HOLE SINGULARITY */
     let cosmicParticles = [];
     let plasmaBeams = [];
 
@@ -1390,7 +1422,6 @@
         ctx.fill();
       });
 
-      // Plasma Beams
       for (let i = plasmaBeams.length - 1; i >= 0; i--) {
         let b = plasmaBeams[i];
         ctx.strokeStyle = `rgba(255, 234, 0, ${b.alpha})`;
@@ -1403,7 +1434,6 @@
         if (b.alpha <= 0) plasmaBeams.splice(i, 1);
       }
 
-      // Event Horizon
       ctx.beginPath();
       ctx.arc(targetX, targetY, 82, 0, Math.PI * 2);
       ctx.fillStyle = '#000000';
@@ -1413,9 +1443,7 @@
       ctx.shadowBlur = 0;
     }
 
-    /* =========================================================================
-       5. INTERACTIVE CYBERPUNK STORM & LIGHTNING
-       ========================================================================= */
+    /* 5. INTERACTIVE CYBERPUNK STORM */
     let rainDrops = [];
     let lightningFlash = 0;
 
@@ -1439,7 +1467,6 @@
       ctx.strokeStyle = '#00e5ff';
       ctx.lineWidth = 1.6;
       rainDrops.forEach(r => {
-        // Windshield deflection around mouse
         if (mouse.x && Math.abs(mouse.x - r.x) < 80 && Math.abs(mouse.y - r.y) < 80) {
           r.x += (r.x > mouse.x ? 6 : -6);
         }
@@ -1453,11 +1480,8 @@
       });
     }
 
-    /* =========================================================================
-       6. INTERACTIVE HYPERSPACE WARP TUNNEL
-       ========================================================================= */
+    /* 6. INTERACTIVE HYPERSPACE WARP TUNNEL */
     let warpStars = [];
-    let warpSpeedMultiplier = 1;
 
     function initHyperspace() {
       warpStars = [];
@@ -1476,7 +1500,6 @@
 
       let cx = canvas.width / 2 + (mouse.x ? (mouse.x - canvas.width/2)*0.4 : 0);
       let cy = canvas.height / 2 + (mouse.y ? (mouse.y - canvas.height/2)*0.4 : 0);
-
       let currentSpeed = isLeftMouseDown ? 55 : 22;
 
       warpStars.forEach(s => {
@@ -1497,9 +1520,7 @@
       });
     }
 
-    /* =========================================================================
-       7. INTERACTIVE ARCADE VAPORWAVE POLYHEDRA
-       ========================================================================= */
+    /* 7. INTERACTIVE ARCADE VAPORWAVE */
     let polyhedra = [];
 
     function initVapor() {
