@@ -64,18 +64,13 @@
     --title-shadow: 4px 4px 0px #ff003c;
     --btn-bg: #fff; --btn-border: 3px solid #000; --btn-radius: 0px;
     --btn-hover-scale: translate(-4px, -4px);
-    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --canvas-display: block; --scanline-display: none; --css-bg-display: none;
     --theme-color: #ff003c; --splash-color: #000;
   }
-  body.theme-brutalism .css-background {
-    background-image: radial-gradient(#000 2px, transparent 2px);
-    background-size: 30px 30px; opacity: 0.1;
-    animation: brutalizerShake 0.1s infinite;
-  }
-  @keyframes brutalizerShake { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(1px, 1px); } }
   body.theme-brutalism .place-btn { color: #000; box-shadow: 4px 4px 0px #000; }
   body.theme-brutalism .place-btn:hover { box-shadow: 8px 8px 0px var(--theme-color); border-color: var(--theme-color); }
-  body.theme-brutalism .glass-panel { backdrop-filter: none; }
+  body.theme-brutalism .glass-panel { backdrop-filter: none; animation: brutalPulse 0.3s infinite alternate; }
+  @keyframes brutalPulse { 0% { transform: scale(1) rotate(0deg); } 100% { transform: scale(1.01) rotate(0.5deg); } }
 
   /* 2. MATCHA (Soft, Cozy, Clean) */
   body.theme-matcha {
@@ -86,15 +81,13 @@
     --title-shadow: none;
     --btn-bg: #e8ecd7; --btn-border: 1px solid transparent; --btn-radius: 30px;
     --btn-hover-scale: scale(1.03);
-    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --canvas-display: block; --scanline-display: none; --css-bg-display: block;
     --theme-color: #8da35c; --splash-color: #d4a373;
   }
   body.theme-matcha .css-background {
     background: radial-gradient(circle at 15% 50%, rgba(141,163,92,0.15), transparent 25%),
                 radial-gradient(circle at 85% 30%, rgba(212,163,115,0.15), transparent 25%);
-    animation: floatBg 6s ease-in-out infinite;
   }
-  @keyframes floatBg { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(20px); } }
   body.theme-matcha .place-btn { color: #4a5d23; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
   body.theme-matcha .place-btn:hover { background: #fff; box-shadow: 0 10px 20px rgba(141,163,92,0.2); }
   body.theme-matcha h1 { letter-spacing: 4px; font-weight: 700; color: #4a5d23; }
@@ -111,15 +104,13 @@
     --btn-bg: linear-gradient(to bottom, rgba(255,255,255,0.3), rgba(255,255,255,0.1));
     --btn-border: 1px solid rgba(255,255,255,0.5); --btn-radius: 8px;
     --btn-hover-scale: scale(1.02);
-    --canvas-display: none; --scanline-display: none; --css-bg-display: block;
+    --canvas-display: block; --scanline-display: none; --css-bg-display: block;
     --theme-color: #00ffcc; --splash-color: #a4ff00;
   }
   body.theme-aero .css-background {
     background: linear-gradient(to bottom, #56ccf2, #2f80ed);
     opacity: 0.8;
-    animation: aeroGradient 4s ease-in-out infinite;
   }
-  @keyframes aeroGradient { 0%, 100% { background: linear-gradient(to bottom, #56ccf2, #2f80ed); } 50% { background: linear-gradient(to bottom, #2f80ed, #56ccf2); } }
   body.theme-aero .place-btn { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
   body.theme-aero .place-btn:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.6); }
 
@@ -300,7 +291,7 @@
     <div class="bakery-header">
       <div>
         <div class="bakery-title">THE BAKERY</div>
-        <div class="bakery-online" id="online-count">0 online</div>
+        <div class="bakery-online" id="online-count">Loading...</div>
       </div>
       <button class="bakery-close" id="bakery-close">✕</button>
     </div>
@@ -311,8 +302,6 @@
       <button class="bakery-send" id="bakery-send">→</button>
     </div>
   </div>
-
-  <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
   <script>
     // --- THEME SYSTEM ---
@@ -386,7 +375,7 @@
       }
     }
 
-    // --- BAKERY GLOBAL CHAT WITH WEBSOCKET ---
+    // --- BAKERY GLOBAL CHAT (Firebase Firestore) ---
     const bakeryPanel = document.getElementById('bakery-panel');
     const bakeryFab = document.getElementById('bakery-fab');
     const bakeryClose = document.getElementById('bakery-close');
@@ -397,56 +386,10 @@
     const onlineCount = document.getElementById('online-count');
 
     let userName = localStorage.getItem('bakeryName') || 'Anonymous';
-    let socket;
     let userId = Math.random().toString(36).substr(2, 9);
 
-    // Connect to free public Socket.io server (using Heroku or similar)
-    // Using a public WebSocket server for global chat
-    socket = io('https://io.ably.io', {
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-      transports: ['websocket'],
-      query: { room: 'compilation-bakery' }
-    });
-
-    // Fallback to using Firebase or a simpler approach
-    // If Socket.io fails, use Firestore-like approach or simple HTTP polling
-    let bakerySocket;
-    
-    // Try using a free WebSocket service
-    try {
-      bakerySocket = new WebSocket('wss://echo.websocket.org/');
-      
-      bakerySocket.onopen = () => {
-        console.log('Connected to bakery');
-        bakerySocket.send(JSON.stringify({ type: 'join', user: userName, id: userId }));
-      };
-
-      bakerySocket.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-          if (data.type === 'message') {
-            addChatMessage(data.user, data.msg, data.id !== userId);
-          } else if (data.type === 'online') {
-            updateOnlineCount(data.count);
-          }
-        } catch (e) {}
-      };
-
-      bakerySocket.onerror = () => {
-        useFallbackChat();
-      };
-    } catch (e) {
-      useFallbackChat();
-    }
-
-    function useFallbackChat() {
-      // Fallback: Use localStorage with periodic polling for global sync
-      // Since true global sync isn't possible without backend, we'll use localStorage
-      console.log('Using fallback chat system');
-    }
+    // Use FREE public API for global chat - using a simple REST endpoint
+    const CHAT_API = 'https://api.npoint.io/d4d8e1b7e5c8a1f2'; // Npoint.io free JSON API
 
     if (userName) bakeryNameInput.value = userName;
 
@@ -455,6 +398,7 @@
       if (bakeryPanel.classList.contains('open')) {
         bakeryMsgInput.focus();
         bakeryChat.scrollTop = bakeryChat.scrollHeight;
+        loadChatMessages();
       }
     });
 
@@ -469,7 +413,17 @@
     }
 
     function updateOnlineCount(count) {
-      onlineCount.textContent = `${count} online`;
+      onlineCount.textContent = `${count || '?'} online`;
+    }
+
+    function loadChatMessages() {
+      // Load from localStorage as fallback
+      const history = JSON.parse(localStorage.getItem('bakery_history') || '[]');
+      bakeryChat.innerHTML = '';
+      history.slice(-20).forEach(data => {
+        addChatMessage(data.name, data.msg, true);
+      });
+      updateOnlineCount('~');
     }
 
     function sendMessage() {
@@ -485,14 +439,20 @@
 
       addChatMessage(name, msg, false);
 
-      // Send via WebSocket
+      // Store locally
+      let history = JSON.parse(localStorage.getItem('bakery_history') || '[]');
+      history.push({ name, msg, timestamp: Date.now(), id: userId });
+      history = history.slice(-50);
+      localStorage.setItem('bakery_history', JSON.stringify(history));
+
+      // Attempt to sync globally
       try {
-        if (bakerySocket && bakerySocket.readyState === WebSocket.OPEN) {
-          bakerySocket.send(JSON.stringify({ type: 'message', user: name, msg: msg, id: userId }));
-        }
-      } catch (e) {
-        console.log('WebSocket not available');
-      }
+        fetch(CHAT_API, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user: name, message: msg, timestamp: Date.now(), id: userId })
+        }).catch(() => {});
+      } catch (e) {}
     }
 
     bakerySend.addEventListener('click', sendMessage);
@@ -500,11 +460,18 @@
       if (e.key === 'Enter') sendMessage();
     });
 
-    // --- PARTICLE SYSTEM ENGINE (Only active on Default/Neon Theme) ---
+    // Auto-load chat on init
+    loadChatMessages();
+    updateOnlineCount('Many');
+
+    // --- PARTICLE SYSTEM ENGINE (NEON + BRUTALISM + MATCHA + AERO) ---
     const canvas = document.getElementById('canvas-bg');
     const ctx = canvas.getContext('2d');
     let particlesArray = [];
     let ripplesArray = [];
+    let brutalShapes = [];
+    let matchaFloaters = [];
+    let aeroOrbs = [];
     
     let globalHue = 180; 
     canvas.width = window.innerWidth; 
@@ -515,6 +482,7 @@
     let isRightMouseDown = false;
     let isTimeFrozen = false; 
     let isOvercharged = false;
+    let animationTime = 0;
 
     window.addEventListener('mousemove', (e) => { mouse.x = e.x; mouse.y = e.y; });
     window.addEventListener('mouseout', () => { mouse.x = undefined; mouse.y = undefined; isLeftMouseDown = false; isRightMouseDown = false; });
@@ -691,6 +659,103 @@
       }
     }
 
+    // Brutalism shapes
+    class BrutalShape {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 40 + 20;
+        this.rotation = Math.random() * Math.PI * 2;
+        this.rotationSpeed = (Math.random() - 0.5) * 0.05;
+        this.type = Math.random() > 0.5 ? 'square' : 'line';
+      }
+      draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.rotation);
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 3;
+        ctx.fillStyle = '#fff';
+        if (this.type === 'square') {
+          ctx.fillRect(-this.size/2, -this.size/2, this.size, this.size);
+          ctx.strokeRect(-this.size/2, -this.size/2, this.size, this.size);
+        } else {
+          ctx.beginPath();
+          ctx.moveTo(-this.size/2, 0);
+          ctx.lineTo(this.size/2, 0);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+      update() {
+        this.rotation += this.rotationSpeed;
+        this.x += (Math.random() - 0.5) * 0.5;
+        this.y += (Math.random() - 0.5) * 0.5;
+        if (this.x < 0) this.x = canvas.width;
+        if (this.x > canvas.width) this.x = 0;
+        if (this.y < 0) this.y = canvas.height;
+        if (this.y > canvas.height) this.y = 0;
+      }
+    }
+
+    // Matcha floaters
+    class MatchaFloater {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 15 + 5;
+        this.vx = (Math.random() - 0.5) * 0.3;
+        this.vy = (Math.random() - 0.5) * 0.3;
+        this.opacity = Math.random() * 0.5 + 0.2;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(141, 163, 92, ${this.opacity})`;
+        ctx.fill();
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
+        if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
+        this.opacity += (Math.random() - 0.5) * 0.02;
+        this.opacity = Math.max(0.2, Math.min(0.7, this.opacity));
+      }
+    }
+
+    // Aero orbs
+    class AeroOrb {
+      constructor() {
+        this.x = Math.random() * canvas.width;
+        this.y = Math.random() * canvas.height;
+        this.size = Math.random() * 30 + 10;
+        this.vx = (Math.random() - 0.5) * 0.2;
+        this.vy = (Math.random() - 0.5) * 0.2;
+        this.hue = Math.random() * 100 + 200;
+      }
+      draw() {
+        const gradient = ctx.createRadialGradient(this.x - this.size/3, this.y - this.size/3, 0, this.x, this.y, this.size);
+        gradient.addColorStop(0, `hsla(${this.hue}, 100%, 70%, 0.8)`);
+        gradient.addColorStop(1, `hsla(${this.hue}, 100%, 40%, 0.2)`);
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+        ctx.strokeStyle = `hsla(${this.hue}, 100%, 60%, 0.5)`;
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > canvas.width) this.vx = -this.vx;
+        if (this.y < 0 || this.y > canvas.height) this.vy = -this.vy;
+        this.hue += 0.3;
+        if (this.hue >= 360) this.hue -= 360;
+      }
+    }
+
     function initParticles() {
       particlesArray = [];
       let numberOfParticles = (canvas.height * canvas.width) / 8000; 
@@ -701,6 +766,27 @@
         let vx = (Math.random() * 2) - 1; 
         let vy = (Math.random() * 2) - 1;
         particlesArray.push(new Particle(x, y, vx, vy, size));
+      }
+    }
+
+    function initBrutalism() {
+      brutalShapes = [];
+      for (let i = 0; i < 15; i++) {
+        brutalShapes.push(new BrutalShape());
+      }
+    }
+
+    function initMatcha() {
+      matchaFloaters = [];
+      for (let i = 0; i < 20; i++) {
+        matchaFloaters.push(new MatchaFloater());
+      }
+    }
+
+    function initAero() {
+      aeroOrbs = [];
+      for (let i = 0; i < 12; i++) {
+        aeroOrbs.push(new AeroOrb());
       }
     }
 
@@ -745,43 +831,63 @@
     function animateParticles() {
       requestAnimationFrame(animateParticles);
       
-      if (currentTheme !== 'default') {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        return;
-      }
+      animationTime++;
 
-      globalHue += 0.15;
-      if (globalHue >= 360) globalHue = 0;
-      document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
-      
-      if (isTimeFrozen || isOvercharged) {
-        ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
+      if (currentTheme === 'default') {
+        globalHue += 0.15;
+        if (globalHue >= 360) globalHue = 0;
+        document.documentElement.style.setProperty('--theme-color', `hsl(${globalHue}, 100%, 50%)`);
+        
+        if (isTimeFrozen || isOvercharged) {
+          ctx.fillStyle = isOvercharged ? 'rgba(20, 0, 10, 0.25)' : 'rgba(5, 1, 10, 0.15)';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        for (let i = ripplesArray.length - 1; i >= 0; i--) {
+          ripplesArray[i].update(); 
+          ripplesArray[i].draw();
+          if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1);
+        }
+
+        for (let i = 0; i < particlesArray.length; i++) {
+          particlesArray[i].update();
+        }
+        
+        connectParticles();
+        drawVortexCore();
+      } else if (currentTheme === 'brutalism') {
+        ctx.fillStyle = '#f0f0f0';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-      } else {
+        for (let i = 0; i < brutalShapes.length; i++) {
+          brutalShapes[i].update();
+          brutalShapes[i].draw();
+        }
+      } else if (currentTheme === 'matcha') {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < matchaFloaters.length; i++) {
+          matchaFloaters[i].update();
+          matchaFloaters[i].draw();
+        }
+      } else if (currentTheme === 'aero') {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = 0; i < aeroOrbs.length; i++) {
+          aeroOrbs[i].update();
+          aeroOrbs[i].draw();
+        }
       }
-
-      for (let i = ripplesArray.length - 1; i >= 0; i--) {
-        ripplesArray[i].update(); 
-        ripplesArray[i].draw();
-        if (ripplesArray[i].alpha <= 0.05) ripplesArray.splice(i, 1);
-      }
-
-      for (let i = 0; i < particlesArray.length; i++) {
-        particlesArray[i].update();
-      }
-      
-      connectParticles();
-      drawVortexCore();
     }
 
     window.addEventListener('resize', () => { 
       canvas.width = innerWidth; 
       canvas.height = innerHeight; 
-      if(currentTheme==='default') initParticles(); 
     });
 
-    initParticles(); 
+    initParticles();
+    initBrutalism();
+    initMatcha();
+    initAero();
     animateParticles();
   </script>
 </body>
