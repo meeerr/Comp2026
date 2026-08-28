@@ -115,7 +115,7 @@
     opacity: 0.8;
   }
   body.theme-aero .place-btn { color: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.4); box-shadow: inset 0 1px 0 rgba(255,255,255,0.6); }
-  body.theme-aero .place-btn:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.8); }
+  body.theme-aero .place-btn:hover { background: linear-gradient(to bottom, rgba(255,255,255,0.5), rgba(255,255,255,0.2)); border-color: #fff; box-shadow: 0 0 15px rgba(255,255,255,0.4), inset 0 1px 0 rgba(255,255,255,0.6); }
 
   /* --- UI ELEMENTS --- */
   .glass-panel {
@@ -173,19 +173,90 @@
   .status-working, .status-warning { font-size: 11px; margin-top: 6px; letter-spacing: 1px; font-weight: normal; opacity: 0.6; }
   .place-btn:hover .status-working, .place-btn:hover .status-warning { opacity: 1; }
 
+  /* --- SLEEK THEME SELECTOR --- */
   .theme-selector {
-    position: fixed; top: 25px; right: 25px; z-index: 20; display: flex; gap: 8px;
-    background: rgba(0, 0, 0, 0.2); padding: 8px; border-radius: 12px;
-    backdrop-filter: blur(10px);
+    position: fixed; top: 25px; right: 25px; z-index: 20; display: flex; gap: 6px;
+    background: rgba(0, 0, 0, 0.3); padding: 10px 12px; border-radius: 20px;
+    backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1);
   }
   
   .theme-btn-sel {
-    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.6);
-    padding: 8px 12px; font-family: sans-serif; font-size: 12px; font-weight: bold; cursor: pointer;
-    border-radius: 6px; transition: all 0.3s ease; text-transform: uppercase;
+    background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.5);
+    padding: 6px 10px; font-family: inherit; font-size: 11px; font-weight: bold; cursor: pointer;
+    border-radius: 12px; transition: all 0.2s ease; text-transform: uppercase; letter-spacing: 0.5px;
   }
-  .theme-btn-sel:hover { color: #fff; background: rgba(255,255,255,0.1); }
-  .theme-btn-sel.active { background: #fff; color: #000; }
+  .theme-btn-sel:hover { color: rgba(255,255,255,0.8); background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.4); }
+  .theme-btn-sel.active { background: var(--theme-color); color: #000; box-shadow: 0 0 12px rgba(0, 255, 255, 0.5); border-color: var(--theme-color); }
+
+  /* --- BAKERY CHAT FEATURE --- */
+  .bakery-fab {
+    position: fixed; bottom: 25px; right: 25px; z-index: 20;
+    width: 50px; height: 50px; border-radius: 50%; background: var(--theme-color); color: #000;
+    border: none; cursor: pointer; font-weight: bold; font-size: 22px; display: flex;
+    align-items: center; justify-content: center; transition: all 0.3s; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+  }
+  .bakery-fab:hover { transform: scale(1.1); box-shadow: 0 6px 20px var(--theme-color); }
+
+  .bakery-panel {
+    position: fixed; bottom: 25px; right: 25px; z-index: 19;
+    width: 350px; height: 500px; background: var(--panel-bg);
+    backdrop-filter: blur(12px); border: var(--panel-border); border-radius: var(--panel-radius);
+    box-shadow: var(--panel-shadow); display: flex; flex-direction: column;
+    transform: scale(0.95) translateY(20px); opacity: 0; pointer-events: none; transition: all 0.3s ease;
+  }
+
+  .bakery-panel.open {
+    transform: scale(1) translateY(0); opacity: 1; pointer-events: auto;
+  }
+
+  .bakery-header {
+    padding: 15px; border-bottom: var(--panel-border);
+    display: flex; justify-content: space-between; align-items: center;
+  }
+
+  .bakery-title { font-size: 15px; font-weight: bold; letter-spacing: 1.5px; text-transform: uppercase; }
+
+  .bakery-close { background: none; border: none; color: var(--text-color); cursor: pointer; font-size: 20px; opacity: 0.6; transition: opacity 0.2s; }
+  .bakery-close:hover { opacity: 1; }
+
+  .bakery-chat {
+    flex: 1; overflow-y: auto; padding: 15px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .bakery-chat::-webkit-scrollbar { width: 4px; }
+  .bakery-chat::-webkit-scrollbar-track { background: transparent; }
+  .bakery-chat::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 2px; }
+
+  .chat-msg {
+    padding: 8px 12px; border-radius: 8px; font-size: 12px; line-height: 1.4;
+    word-wrap: break-word; animation: msgSlideIn 0.3s ease;
+  }
+  @keyframes msgSlideIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+  .chat-msg.other { background: rgba(255,255,255,0.08); color: var(--text-color); }
+  .chat-msg.self { background: var(--theme-color); color: #000; margin-left: auto; max-width: 85%; text-align: right; }
+
+  .chat-name { font-size: 10px; opacity: 0.7; margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+  .bakery-input-area {
+    padding: 12px; border-top: var(--panel-border); display: flex; gap: 8px;
+  }
+
+  .bakery-name-input, .bakery-msg-input {
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1); color: var(--text-color);
+    padding: 8px 10px; border-radius: 6px; font-family: inherit; font-size: 11px;
+    transition: all 0.2s; flex: 1;
+  }
+
+  .bakery-name-input::placeholder, .bakery-msg-input::placeholder { color: rgba(255,255,255,0.3); }
+  .bakery-name-input:focus, .bakery-msg-input:focus { outline: none; border-color: var(--theme-color); background: rgba(0,0,0,0.5); }
+
+  .bakery-send {
+    background: var(--theme-color); border: none; color: #000; cursor: pointer;
+    padding: 8px 12px; border-radius: 6px; font-weight: bold; font-family: inherit; font-size: 11px;
+    transition: all 0.2s; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .bakery-send:hover { transform: scale(1.05); box-shadow: 0 0 15px var(--theme-color); }
+  .bakery-send:active { transform: scale(0.95); }
 
 </style>
 </head>
@@ -195,6 +266,7 @@
   <div class="scanlines"></div>
   <div class="css-background"></div>
 
+  <!-- Theme Selector -->
   <div class="theme-selector">
     <button class="theme-btn-sel active" data-theme="default">NEON</button>
     <button class="theme-btn-sel" data-theme="brutalism">BRUTAL</button>
@@ -202,6 +274,7 @@
     <button class="theme-btn-sel" data-theme="aero">AERO</button>
   </div>
 
+  <!-- Main Panel -->
   <div class="glass-panel" id="tilt-panel">
     <div class="title-wrapper">
       <h1 id="main-title">COMPILATION</h1>
@@ -211,7 +284,25 @@
     <div class="grid-container" id="menu"></div>
   </div>
 
+  <!-- Bakery Chat Button -->
+  <button class="bakery-fab" id="bakery-fab">🥐</button>
+
+  <!-- Bakery Chat Panel -->
+  <div class="bakery-panel" id="bakery-panel">
+    <div class="bakery-header">
+      <div class="bakery-title">THE BAKERY</div>
+      <button class="bakery-close" id="bakery-close">✕</button>
+    </div>
+    <div class="bakery-chat" id="bakery-chat"></div>
+    <div class="bakery-input-area">
+      <input type="text" id="bakery-name" class="bakery-name-input" placeholder="Name" maxlength="20">
+      <input type="text" id="bakery-msg" class="bakery-msg-input" placeholder="Say something...">
+      <button class="bakery-send" id="bakery-send">→</button>
+    </div>
+  </div>
+
   <script>
+    // --- THEME SYSTEM ---
     let currentTheme = 'default';
     const themeButtons = document.querySelectorAll('.theme-btn-sel');
     
@@ -221,12 +312,19 @@
         btn.classList.add('active');
         currentTheme = btn.dataset.theme;
         document.body.className = `theme-${currentTheme}`;
+        localStorage.setItem('preferredTheme', currentTheme);
         
         if (currentTheme === 'default') {
-            initParticles(); // Restart particles if switching back
+          initParticles();
         }
       });
     });
+
+    // Restore theme preference
+    const savedTheme = localStorage.getItem('preferredTheme') || 'default';
+    document.body.className = `theme-${savedTheme}`;
+    document.querySelector(`[data-theme="${savedTheme}"]`).classList.add('active');
+    currentTheme = savedTheme;
 
     const quotes = ["100% legal", "RIP Sweet Tea", "JC>CC", "T-cubed", "Lafayette B.", "BLEHELEHEHHEEHH"];
     document.getElementById('splash-text').innerText = quotes[Math.floor(Math.random() * quotes.length)];
@@ -282,6 +380,91 @@
         w.document.close();
       }
     }
+
+    // --- BAKERY CHAT SYSTEM ---
+    const bakeryPanel = document.getElementById('bakery-panel');
+    const bakeryFab = document.getElementById('bakery-fab');
+    const bakeryClose = document.getElementById('bakery-close');
+    const bakerySend = document.getElementById('bakery-send');
+    const bakeryChat = document.getElementById('bakery-chat');
+    const bakeryNameInput = document.getElementById('bakery-name');
+    const bakeryMsgInput = document.getElementById('bakery-msg');
+
+    let userName = localStorage.getItem('bakeryName') || '';
+    if (userName) bakeryNameInput.value = userName;
+
+    bakeryFab.addEventListener('click', () => {
+      bakeryPanel.classList.toggle('open');
+      if (bakeryPanel.classList.contains('open')) {
+        bakeryMsgInput.focus();
+        bakeryChat.scrollTop = bakeryChat.scrollHeight;
+      }
+    });
+
+    bakeryClose.addEventListener('click', () => bakeryPanel.classList.remove('open'));
+
+    function sendMessage() {
+      const name = bakeryNameInput.value.trim() || 'Anonymous';
+      const msg = bakeryMsgInput.value.trim();
+      
+      if (!msg) return;
+
+      userName = name;
+      localStorage.setItem('bakeryName', name);
+      bakeryNameInput.value = name;
+      bakeryMsgInput.value = '';
+
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'chat-msg self';
+      msgDiv.innerHTML = `<div class="chat-name">${name}</div>${msg}`;
+      bakeryChat.appendChild(msgDiv);
+      bakeryChat.scrollTop = bakeryChat.scrollHeight;
+
+      // Send via localStorage (broadcast to all tabs)
+      const timestamp = Date.now();
+      const chatData = { name, msg, timestamp, id: Math.random().toString(36).substr(2, 9) };
+      
+      localStorage.setItem('bakery_broadcast', JSON.stringify(chatData));
+
+      // Store in message history
+      let history = JSON.parse(localStorage.getItem('bakery_history') || '[]');
+      history.push(chatData);
+      history = history.slice(-50);
+      localStorage.setItem('bakery_history', JSON.stringify(history));
+    }
+
+    bakerySend.addEventListener('click', sendMessage);
+    bakeryMsgInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    // Listen for messages from other tabs
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'bakery_broadcast') {
+        const data = JSON.parse(e.newValue);
+        if (data) {
+          const msgDiv = document.createElement('div');
+          msgDiv.className = 'chat-msg other';
+          msgDiv.innerHTML = `<div class="chat-name">${data.name}</div>${data.msg}`;
+          bakeryChat.appendChild(msgDiv);
+          bakeryChat.scrollTop = bakeryChat.scrollHeight;
+        }
+      }
+    });
+
+    // Load chat history on init
+    function loadChatHistory() {
+      const history = JSON.parse(localStorage.getItem('bakery_history') || '[]');
+      history.forEach(data => {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'chat-msg other';
+        msgDiv.innerHTML = `<div class="chat-name">${data.name}</div>${data.msg}`;
+        bakeryChat.appendChild(msgDiv);
+      });
+      bakeryChat.scrollTop = bakeryChat.scrollHeight;
+    }
+
+    loadChatHistory();
 
     // --- PARTICLE SYSTEM ENGINE (Only active on Default Theme) ---
     const canvas = document.getElementById('canvas-bg');
@@ -341,9 +524,8 @@
       requestAnimationFrame(animateParticles);
       
       if (currentTheme !== 'default') {
-          // Skip drawing particles to save CPU on non-neon themes
-          ctx.clearRect(0, 0, canvas.width, canvas.height);
-          return;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        return;
       }
 
       globalHue += 0.15;
