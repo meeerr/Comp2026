@@ -70,6 +70,52 @@
     z-index: 1;
   }
 
+  /* Minimalist Top-Left View Counter */
+  .view-counter {
+    position: fixed;
+    top: 18px;
+    left: 22px;
+    z-index: 10;
+    font-size: 11px;
+    letter-spacing: 1.8px;
+    color: rgba(255, 255, 255, 0.45);
+    background: rgba(0, 0, 0, 0.45);
+    padding: 6px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s ease;
+  }
+
+  .view-counter:hover {
+    color: #fff;
+    border-color: var(--theme-color);
+    box-shadow: 0 0 12px var(--theme-color);
+  }
+
+  .counter-dot {
+    width: 6px;
+    height: 6px;
+    background: var(--theme-color);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--theme-color);
+    animation: counterBlink 2s infinite alternate;
+  }
+
+  .counter-val {
+    color: var(--theme-color);
+    font-weight: bold;
+  }
+
+  @keyframes counterBlink {
+    0% { opacity: 0.3; }
+    100% { opacity: 1; }
+  }
+
   @keyframes panelGlow {
     0% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 15px rgba(255,255,255,0.1); }
     100% { box-shadow: 0 30px 60px rgba(0,0,0,0.9), inset 0 0 20px rgba(255,255,255,0.05), 0 0 40px var(--theme-color); }
@@ -567,6 +613,13 @@
 </head>
 <body data-theme="dynamic">
 
+  <!-- Minimal Top Left View Counter -->
+  <div class="view-counter" id="view-counter-box" title="Total Site Views">
+    <span class="counter-dot"></span>
+    <span>VIEWS:</span>
+    <span class="counter-val" id="view-counter-val">1,348</span>
+  </div>
+
   <!-- Startup Boot Overlay -->
   <div id="startup-overlay" onclick="dismissStartup()">
     <div class="startup-loader">
@@ -639,6 +692,28 @@
   </div>
 
   <script>
+    /* VIEW COUNTER LOGIC */
+    async function initViewCounter() {
+      const counterEl = document.getElementById('view-counter-val');
+      let baseCount = parseInt(localStorage.getItem('compilation_views_count') || '1348', 10) + 1;
+      localStorage.setItem('compilation_views_count', baseCount);
+      counterEl.innerText = baseCount.toLocaleString();
+
+      try {
+        const res = await fetch('https://api.counterapi.dev/v1/compilation_site_views_v6/views/up');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.count) {
+            const total = data.count + 1300;
+            counterEl.innerText = total.toLocaleString();
+          }
+        }
+      } catch (err) {
+        // Fallback to locally incremented base count seamlessly
+      }
+    }
+    initViewCounter();
+
     /* STARTUP SEQUENCE */
     function dismissStartup() {
       const overlay = document.getElementById('startup-overlay');
@@ -877,7 +952,6 @@
       mqttClient.subscribe(BAKERY_TOPIC);
       mqttClient.subscribe(PRESENCE_TOPIC);
 
-      // Presence heartbeat ping
       setInterval(() => {
         if (mqttClient.connected) {
           mqttClient.publish(PRESENCE_TOPIC, JSON.stringify({ id: myClientId, time: Date.now() }));
